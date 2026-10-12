@@ -44,6 +44,9 @@ describe("build", () => {
     expect(html).toContain("已不在官方公告中");
     for (const r of records.slice(0, 20)) expect(html).not.toContain(r.name);
   });
+  it("每筆都有 OG 圖", () => {
+    for (const r of records.slice(0, 5)) expect(existsSync(`${ROOT}/dist/og/${r.id}.png`)).toBe(true);
+  });
   it("about 有回報下架的 GitHub Issues 連結", () => {
     expect(read("about/index.html")).toContain("github.com/weryk153/taiwan-wanted/issues");
   });
