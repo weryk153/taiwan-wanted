@@ -25,4 +25,26 @@ describe("build", () => {
     expect(read("index.html")).not.toMatch(/[A-Z][12]\d{8}/);
   });
   it("dist 存在", () => expect(existsSync(`${ROOT}/dist`)).toBe(true));
+  it("個人頁 noindex、連回官方、含資料日期", () => {
+    const r = records[0];
+    const html = read(`p/${r.id}/index.html`);
+    expect(html).toContain('name="robots" content="noindex, nofollow"');
+    expect(html).toContain(r.sourceUrl.replace(/&/g, "&amp;"));
+    expect(html).toContain(r.fetchedAt.slice(0, 10));
+    expect(html).not.toMatch(/[A-Z][12]\d{8}/);
+  });
+  it("每筆都有個人頁", () => {
+    for (const r of records) expect(existsSync(`${ROOT}/dist/p/${r.id}/index.html`)).toBe(true);
+  });
+  it("data.json 筆數一致", () => {
+    expect(JSON.parse(read("data.json"))).toHaveLength(records.length);
+  });
+  it("404 不含任何姓名", () => {
+    const html = read("404.html");
+    expect(html).toContain("已不在官方公告中");
+    for (const r of records.slice(0, 20)) expect(html).not.toContain(r.name);
+  });
+  it("about 有回報下架的 GitHub Issues 連結", () => {
+    expect(read("about/index.html")).toContain("github.com/weryk153/taiwan-wanted/issues");
+  });
 });
