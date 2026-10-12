@@ -25,6 +25,15 @@ describe("build", () => {
     expect(read("index.html")).not.toMatch(/[A-Z][12]\d{8}/);
   });
   it("dist 存在", () => expect(existsSync(`${ROOT}/dist`)).toBe(true));
+  it("整份 wanted.json 與 dist/data.json 都沒有完整證號格式", () => {
+    expect(readFileSync(`${ROOT}/data/wanted.json`, "utf8")).not.toMatch(/[A-Z][12]\d{8}/);
+    expect(read("data.json")).not.toMatch(/[A-Z][12]\d{8}/);
+  });
+  it("照片與 OG 圖有 X-Robots-Tag noindex", () => {
+    const h = read("_headers");
+    expect(h).toMatch(/\/photos\/\*\n\s+X-Robots-Tag: noindex/);
+    expect(h).toMatch(/\/og\/\*\n\s+X-Robots-Tag: noindex/);
+  });
   it("個人頁 noindex、連回官方、含資料日期", () => {
     const r = records[0];
     const html = read(`p/${r.id}/index.html`);

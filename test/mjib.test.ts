@@ -49,7 +49,8 @@ describe("fetchMjib", () => {
       return new Response(detail, { status: 200 });
     };
     const out = await fetchMjib(http);
-    expect(out.map((r) => r.uid)).toEqual([483, 482]);
+    expect(out.skipped).toBe(0);
+    expect(out.records.map((r) => r.uid)).toEqual([483, 482]);
     expect(calls.filter((u) => u.includes("Crimes_Detail"))).toHaveLength(2);
   });
 
@@ -57,7 +58,16 @@ describe("fetchMjib", () => {
     const http: Http = async (url) =>
       new Response(url.includes("Crimes_List") ? list : detail, { status: 200 });
     const out = await fetchMjib(http);
-    expect(out).toHaveLength(2);
+    expect(out.records).toHaveLength(2);
+  });
+
+  it("非最後一頁解出 0 筆 → 丟錯", async () => {
+    const http: Http = async (url) => {
+      if (url.includes("page=3")) return new Response(fx("error-page.html"), { status: 200 });
+      if (url.includes("Crimes_List")) return new Response(list, { status: 200 });
+      return new Response(detail, { status: 200 });
+    };
+    await expect(fetchMjib(http)).rejects.toThrow(/page 3/);
   });
 
   it("列表失敗 → 丟錯；詳細頁錯誤頁 → 略過", async () => {
@@ -68,6 +78,8 @@ describe("fetchMjib", () => {
       n += 1;
       return new Response(n === 1 ? fx("error-page.html") : detail, { status: 200 });
     };
-    expect(await fetchMjib(http)).toHaveLength(1);
+    const out = await fetchMjib(http);
+    expect(out.records).toHaveLength(1);
+    expect(out.skipped).toBe(1);
   });
 });

@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createHttp } from "./http";
 import { fetchCib } from "./sources/cib";
 import { fetchMjib } from "./sources/mjib";
@@ -9,7 +10,7 @@ import { savePhoto } from "./photos";
 import { readPrev, writeData, pruneOrphanPhotos } from "./io";
 import type { Meta, Source, WantedRecord } from "../src/lib/types";
 
-const ROOT = new URL("..", import.meta.url).pathname;
+const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const DATA_DIR = join(ROOT, "data");
 const PHOTO_DIR = join(ROOT, "public", "photos");
 
@@ -26,10 +27,14 @@ async function run() {
     sources: { cib: { count: 0, stale: false, errors: 0 }, mjib: { count: 0, stale: false, errors: 0 } },
   };
 
-  async function collect(source: Source, work: () => Promise<Normalized[]>): Promise<WantedRecord[]> {
+  async function collect(source: Source, work: () => Promise<{ records: Normalized[]; skipped: number }>): Promise<WantedRecord[]> {
     let next: Normalized[] | null = null;
+    let skipped = 0;
     try {
-      next = await work();
+      const r = await work();
+      next = r.records;
+      skipped = r.skipped;
+      meta.sources[source].errors += skipped;
     } catch (e) {
       log(`${source}: FAILED ${(e as Error).message}`);
     }
@@ -49,17 +54,21 @@ async function run() {
       }
     }
 
-    const g = guardSource(prevRecords, withPhotos);
+    const g = guardSource(prevRecords, withPhotos, skipped);
     meta.sources[source].stale = g.stale;
     meta.sources[source].count = g.records.length;
     log(`${source}: ${g.records.length} records${g.stale ? ` (STALE: ${g.reason})` : ""}`);
     return g.records;
   }
 
-  const cib = await collect("cib", async () =>
-    (await fetchCib(http, log)).map((r) => normalizeCib(r, fetchedAt)));
-  const mjib = await collect("mjib", async () =>
-    (await fetchMjib(http, log)).map((r) => normalizeMjib(r, fetchedAt)));
+  const cib = await collect("cib", async () => {
+    const r = await fetchCib(http, log);
+    return { records: r.records.map((x) => normalizeCib(x, fetchedAt)), skipped: r.skipped };
+  });
+  const mjib = await collect("mjib", async () => {
+    const r = await fetchMjib(http, log);
+    return { records: r.records.map((x) => normalizeMjib(x, fetchedAt)), skipped: r.skipped };
+  });
 
   const all = [...cib, ...mjib];
   await writeData(DATA_DIR, all, meta);

@@ -7,9 +7,14 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: fetch
+  cancel-in-progress: false
+
 jobs:
   fetch:
     runs-on: ubuntu-latest
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -30,6 +35,7 @@ jobs:
           ADD=$(git diff --cached --numstat data/wanted.json | awk '{print $1}')
           DEL=$(git diff --cached --numstat data/wanted.json | awk '{print $2}')
           git commit -m "data: $(date -u +%F) +${ADD:-0} -${DEL:-0}"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
           git push
       - name: fail if stale
         if: steps.sync.outcome == 'failure'

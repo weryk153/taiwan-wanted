@@ -18,7 +18,9 @@ export function parseCibListPage(html: string): { sernos: string[]; pageCount: n
   return { sernos, pageCount };
 }
 
-export async function fetchCib(http: Http, log: (m: string) => void = () => {}): Promise<CibRaw[]> {
+export interface FetchResult<T> { records: T[]; skipped: number }
+
+export async function fetchCib(http: Http, log: (m: string) => void = () => {}): Promise<FetchResult<CibRaw>> {
   // 刑事局的 page 參數從 0 起算：page=0 是最新的 16 筆，最後一頁是 pageCount-1。
   const first = await http(`${LIST}&page=0`);
   if (!first.ok) throw new Error(`cib list page 0: HTTP ${first.status}`);
@@ -27,13 +29,17 @@ export async function fetchCib(http: Http, log: (m: string) => void = () => {}):
   for (let page = 1; page < p1.pageCount; page += 1) {
     const res = await http(`${LIST}&page=${page}`);
     if (!res.ok) throw new Error(`cib list page ${page}: HTTP ${res.status}`);
-    for (const s of parseCibListPage(await res.text()).sernos) {
+    const found = parseCibListPage(await res.text()).sernos;
+    // 非最後一頁卻解出 0 筆，多半是 200 錯誤頁或被導回列表；寧可整批失敗也不要默默少抓。
+    if (found.length === 0 && page < p1.pageCount - 1) throw new Error(`cib list page ${page}: 0 records`);
+    for (const s of found) {
       if (!sernos.includes(s)) sernos.push(s);
     }
   }
   log(`cib: ${sernos.length} sernos over ${p1.pageCount} pages`);
 
   const out: CibRaw[] = [];
+  let skipped = 0;
   for (const serno of sernos) {
     try {
       const res = await http(RECORD(serno));
@@ -42,8 +48,9 @@ export async function fetchCib(http: Http, log: (m: string) => void = () => {}):
       if (!data || typeof data.subject !== "string") throw new Error("unexpected JSON shape");
       out.push({ serno, data });
     } catch (e) {
+      skipped += 1;
       log(`cib: skip ${serno}: ${(e as Error).message}`);
     }
   }
-  return out;
+  return { records: out, skipped };
 }

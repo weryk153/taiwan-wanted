@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { WantedRecord } from "../lib/types";
   import { CATEGORIES } from "../lib/types";
+  import { matches } from "../lib/search";
 
   let { records }: { records: WantedRecord[] } = $props();
   let q = $state("");
@@ -9,15 +10,13 @@
 
   const SOURCE_LABEL: Record<string, string> = { cib: "刑事局", mjib: "調查局" };
 
-  let shown = $derived.by(() => {
-    const needle = q.trim();
-    return records.filter((r) => {
+  let shown = $derived.by(() =>
+    records.filter((r) => {
       if (source && r.source !== source) return false;
       if (category && r.category !== category) return false;
-      if (!needle) return true;
-      return [r.name, r.nameEn, r.accusation, r.wantedUnit].some((v) => v?.includes(needle));
-    });
-  });
+      return matches(r, q);
+    }),
+  );
 </script>
 
 <div class="toolbar">

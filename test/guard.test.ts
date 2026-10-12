@@ -26,6 +26,11 @@ describe("guardSource", () => {
     expect(guardSource(many(100), many(69, "b")).stale).toBe(true);
     expect(guardSource(many(100), many(70, "b")).stale).toBe(false);
   });
+  it("單筆略過超過 5% → stale；5% 以內不 stale", () => {
+    expect(guardSource(many(100), many(94, "b"), 6).stale).toBe(true);   // 6/100
+    expect(guardSource(many(100), many(95, "b"), 5).stale).toBe(false);  // 5/100
+    expect(guardSource(many(100), many(95, "b"), 5).records).toHaveLength(95);
+  });
   it("第一次（舊資料空）且有新資料 → 不 stale", () => {
     const r = guardSource([], many(3));
     expect(r.stale).toBe(false);

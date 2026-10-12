@@ -82,7 +82,7 @@ interface Meta {
 }
 ```
 
-全碼身分證、護照號碼在抓取腳本記憶體內即丟棄，不寫入任何檔案，git 歷史中也不存在。
+全碼身分證、護照號碼在抓取腳本記憶體內即丟棄，不寫入任何檔案，git 歷史中也不存在。所有輸出的自由文字（獎金說明、查緝原因、涉嫌事實等）再過一道正規式，`[A-Z][12]\d{8}` 一律換成遮蔽格式。測試對整份 `wanted.json` 與 `dist/data.json` 斷言找不到完整證號格式。
 
 ## 抓取流程
 
@@ -103,8 +103,10 @@ interface Meta {
 3. **正規化** (`scripts/normalize.ts`)：兩種原始格式 → `WantedRecord`；遮蔽；民國年轉西元；罪名歸類。
 4. **照片** (`scripts/photos.ts`)：下載到 `public/photos/<id>.jpg`，sharp 縮至長邊 480px、去 EXIF、JPEG 品質 80。下載失敗 → `photo: null`，記 errors。
 5. **防線** (`scripts/guard.ts`)，每個來源獨立判斷：
-   - HTTP 失敗、解析得 0 筆、或筆數比上一版少超過 30% → 該來源沿用上一版記錄與照片，`stale: true`，程序以非零碼結束（讓 workflow 失敗通知）。
-   - 單筆失敗 → 略過，`errors + 1`，不影響整批。
+   - HTTP 失敗、解析得 0 筆、筆數比上一版少超過 30%、或單筆略過超過 5% → 該來源沿用上一版記錄與照片，`stale: true`，程序以非零碼結束（讓 workflow 失敗通知）。
+   - 列表非最後一頁解出 0 筆（200 錯誤頁、被導回列表）→ 該來源整批失敗，不默默少抓。
+   - 單筆失敗 → 略過，`errors + 1`，不影響整批（但受 5% 門檻約束）。
+   - 每個請求 30 秒 timeout；workflow job 40 分鐘上限。
 6. **寫檔**：`data/wanted.json`、`data/meta.json`；刪除本版不存在的 id 對應照片。
 
 罪名歸類 (`src/lib/categories.ts`)：關鍵字表，順序比對，第一個命中即歸類；全部不命中為「其他」。不做模糊推測。「經濟犯罪」涵蓋證券交易法、銀行法、侵占、背信、期貨、保險法、公司法、商業會計法、稅捐、票據，因調查局名單四成是這類。
@@ -119,6 +121,7 @@ Astro 5 靜態輸出，Svelte 5 只用在搜尋篩選 island。
 | `/p/<id>` | 全部欄位、大圖、檢舉電話、官方原始頁連結、資料日期、「以通緝機關最新公告為準」。`<meta name="robots" content="noindex, nofollow">`。OG title／description／image。 |
 | `/about` | 來源、更新頻率、免責、回報下架的 GitHub Issues 連結與處理原則。 |
 | `/data.json` | `data/wanted.json` 原樣輸出。 |
+| `/_headers` | Cloudflare Pages 標頭：`/photos/*` 與 `/og/*` 加 `X-Robots-Tag: noindex`，圖片搜尋也不收。 |
 | `/404` | 「此筆已不在官方公告中」，不顯示任何姓名。 |
 
 OG 圖：build 時用 satori + resvg 產 1200×630 文字卡（姓名、罪名、通緝機關、站名）。

@@ -1,6 +1,7 @@
 import * as cheerio from "cheerio";
 import type { Http } from "../http";
 import type { MjibRaw } from "../normalize";
+import type { FetchResult } from "./cib";
 
 const BASE = "https://www.mjib.gov.tw";
 const LIST = (page: number) => `${BASE}/Crimes/Crimes_List?page=${page}`;
@@ -41,7 +42,7 @@ export function parseMjibDetail(html: string, uid: number): MjibRaw | null {
   return { uid, photoUrl, fields };
 }
 
-export async function fetchMjib(http: Http, log: (m: string) => void = () => {}): Promise<MjibRaw[]> {
+export async function fetchMjib(http: Http, log: (m: string) => void = () => {}): Promise<FetchResult<MjibRaw>> {
   const first = await http(LIST(1));
   if (!first.ok) throw new Error(`mjib list page 1: HTTP ${first.status}`);
   const p1 = parseMjibListPage(await first.text());
@@ -49,13 +50,16 @@ export async function fetchMjib(http: Http, log: (m: string) => void = () => {})
   for (let page = 2; page <= p1.pageCount; page += 1) {
     const res = await http(LIST(page));
     if (!res.ok) throw new Error(`mjib list page ${page}: HTTP ${res.status}`);
-    for (const u of parseMjibListPage(await res.text()).uids) {
+    const found = parseMjibListPage(await res.text()).uids;
+    if (found.length === 0 && page < p1.pageCount) throw new Error(`mjib list page ${page}: 0 records`);
+    for (const u of found) {
       if (!uids.includes(u)) uids.push(u);
     }
   }
   log(`mjib: ${uids.length} uids over ${p1.pageCount} pages`);
 
   const out: MjibRaw[] = [];
+  let skipped = 0;
   for (const uid of uids) {
     try {
       const res = await http(DETAIL(uid));
@@ -64,8 +68,9 @@ export async function fetchMjib(http: Http, log: (m: string) => void = () => {})
       if (!raw) throw new Error("no crimes-detail block");
       out.push(raw);
     } catch (e) {
+      skipped += 1;
       log(`mjib: skip ${uid}: ${(e as Error).message}`);
     }
   }
-  return out;
+  return { records: out, skipped };
 }

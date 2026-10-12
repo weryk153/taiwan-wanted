@@ -102,6 +102,12 @@ describe("normalizeCib", () => {
     expect(record.photo).toBeNull();
     expect(photoUrl).toContain("detailNo=1");
   });
+  it("自由文字裡出現完整證號也會被遮", () => {
+    const r = normalizeCib({ ...raw, data: { ...raw.data, note: "聯絡 A123456789 或 B223456789", reason: "A123456789" } }, FETCHED);
+    expect(r.record.reward).toBe("聯絡 A12******* 或 B22*******");
+    expect(r.record.reason).toBe("A12*******");
+    expect(JSON.stringify(r.record)).not.toMatch(/[A-Z][12]\d{8}/);
+  });
   it("沒有圖片時 photoUrl undefined", () => {
     const r = normalizeCib({ ...raw, data: { ...raw.data, images: [] } }, FETCHED);
     expect(r.photoUrl).toBeUndefined();
@@ -136,6 +142,10 @@ describe("normalizeMjib 去掉尾端英文", () => {
     expect(record.facts).toBe("王某自114年7月間寄送網路電話交換機（即IPPBX）來臺。");
   });
   it("姓名不動", () => expect(record.name).toBe("余劍涵（別名 JANUS YU)"));
+  it("事實裡的完整證號會被遮", () => {
+    const r = normalizeMjib({ uid: 3, fields: { "涉嫌事實": "冒用 A123456789 開戶。" } }, FETCHED);
+    expect(r.record.facts).toBe("冒用 A12******* 開戶。");
+  });
   it("純英文值不動", () => {
     const r = normalizeMjib({ uid: 2, fields: { "可能潛逃時間": "October 2012" } }, FETCHED);
     expect(r.record.fledAt).toBe("October 2012");

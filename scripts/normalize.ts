@@ -59,8 +59,11 @@ export function maskId(s: string | undefined): string | undefined {
   return t.slice(0, 3) + "*".repeat(7);
 }
 
+const FULL_ID = /[A-Z][12]\d{8}/g;
+
+/** 任何要輸出的文字都先遮掉完整證號；官方自由文字偶爾會夾帶。 */
 const clean = (s: string | undefined): string | undefined => {
-  const t = decode(s ?? "").trim();
+  const t = decode(s ?? "").trim().replace(FULL_ID, (m) => maskId(m) ?? "");
   return t && t !== "不詳" ? t : undefined;
 };
 
