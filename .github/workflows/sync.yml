@@ -1,50 +1,50 @@
-name: fetch
+name: sync
+
 on:
   schedule:
-    - cron: "0 22 * * *"   # 台灣 06:00
+    - cron: "0 22 * * *"
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: fetch
+  group: sync
   cancel-in-progress: false
 
-# 資料與照片不進 master。每天把 master 的程式碼加上最新資料做成一個 orphan commit，
-# force-push 到 site 分支（Cloudflare Pages 的 production branch）。site 永遠只有一個 commit，
-# 已下架的人不會留在可瀏覽的 git 歷史裡。
 jobs:
-  fetch:
+  sync:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
-        with: { node-version-file: .nvmrc, cache: pnpm }
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
       - run: pnpm install --frozen-lockfile
 
-      - name: 取上一版資料（給 guard 比對與照片快取）
+      - name: Restore previous data from site branch
         run: |
           if git fetch --depth=1 origin site 2>/dev/null; then
             git checkout FETCH_HEAD -- data public/photos || true
             git reset -q -- data public/photos
           else
-            echo "site 分支不存在，視為第一次"
+            echo "no site branch yet, first run"
           fi
 
-      - name: sync
+      - name: Sync
         id: sync
         run: pnpm sync
         continue-on-error: true
 
-      - name: 驗證輸出沒有完整證號
+      - name: Verify no full ID numbers in output
         run: |
           test -s data/wanted.json
-          ! grep -qE '"[A-Z][12][0-9]{8}"' data/wanted.json
+          if grep -qE '"[A-Z][12][0-9]{8}"' data/wanted.json; then echo "full ID found"; exit 1; fi
 
-      - name: 發布到 site 分支（單一 commit）
+      - name: Publish single-commit site branch
         run: |
           git config user.name "taiwan-wanted bot"
           git config user.email "actions@users.noreply.github.com"
@@ -56,8 +56,8 @@ jobs:
           git commit -q -m "site: $(date -u +%F) cib=$CIB mjib=$MJIB"
           git push --force origin site-next:site
 
-      - name: fail if stale
+      - name: Fail if a source was stale
         if: steps.sync.outcome == 'failure'
         run: |
-          echo "::error::sync 非零結束（某來源 stale 或崩潰），site 已用可用的資料更新，請看 sync 步驟 log"
+          echo "::error::sync exited non-zero (a source is stale or crashed); site was updated with the usable data. See the Sync step log."
           exit 1

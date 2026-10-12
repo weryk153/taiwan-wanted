@@ -15,7 +15,8 @@ beforeAll(() => {
 
 // master 不含資料；本機先 `pnpm sync`，CI 從 site 分支取。沒有資料就整組略過。
 describe.skipIf(!HAS_DATA)("build", () => {
-  const records = JSON.parse(readFileSync(`${ROOT}/data/wanted.json`, "utf8"));
+  // skipIf 只略過測試，describe 本體仍會執行，所以沒資料時不要讀檔。
+  const records = HAS_DATA ? JSON.parse(readFileSync(`${ROOT}/data/wanted.json`, "utf8")) : [];
 
   it("首頁可索引、含搜尋框", () => {
     const html = read("index.html");

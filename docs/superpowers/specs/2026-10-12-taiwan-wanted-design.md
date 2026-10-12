@@ -131,7 +131,7 @@ OG 圖：build 時用 satori + resvg 產 1200×630 文字卡（姓名、罪名�
 
 ## 更新與部署
 
-- `.github/workflows/fetch.yml`：cron 每日 22:00 UTC（台灣 06:00）＋ `workflow_dispatch`。先從 `site` 分支取上一版資料（guard 比對、照片快取），跑 `pnpm sync`，驗證輸出無完整證號，再以 master 程式碼＋資料建立 orphan commit force-push 到 `site`。`site` 永遠只有一個 commit。
+- `.github/workflows/sync.yml`：cron 每日 22:00 UTC（台灣 06:00）＋ `workflow_dispatch`。先從 `site` 分支取上一版資料（guard 比對、照片快取），跑 `pnpm sync`，驗證輸出無完整證號，再以 master 程式碼＋資料建立 orphan commit force-push 到 `site`。`site` 永遠只有一個 commit。
 - `master` 的 `.gitignore` 排除 `data/*.json` 與 `public/photos/*.jpg`。`test.yml` 在 master 跑測試時從 `site` 取資料；取不到就略過 build 測試。
 - Cloudflare Pages 連 repo，production branch `site`，`pnpm build`，輸出 `dist/`。先用 `*.pages.dev`。
 - 回報下架走 GitHub Issues（公開；下架標準是官方已撤銷這個客觀事實，不需驗證回報者身分）。處理原則（寫在 about）：官方已下架 → 手動移除或等下次同步；官方仍公告 → 不刪，請對方洽通緝機關。
@@ -152,7 +152,7 @@ taiwan-wanted/
   test/
     fixtures/cib-list.html  fixtures/cib-record.json  fixtures/mjib-list.html  fixtures/mjib-detail.html
     normalize.test.ts  guard.test.ts  cib.test.ts  mjib.test.ts  build.test.ts
-  .github/workflows/fetch.yml
+  .github/workflows/sync.yml
   docs/superpowers/specs/
 ```
 
