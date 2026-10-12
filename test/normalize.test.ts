@@ -17,7 +17,7 @@ describe("rocToIso", () => {
 });
 
 describe("maskId", () => {
-  it("全碼", () => expect(maskId("A123456789")).toBe("B10*******"));
+  it("全碼", () => expect(maskId("A123456789")).toBe("A12*******"));
   it("已遮蔽", () => expect(maskId("T10277****")).toBe("T10*******"));
   it("太短或空", () => {
     expect(maskId("AB")).toBeUndefined();
