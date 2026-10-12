@@ -27,7 +27,9 @@
 | 架構 | 靜態站 + 排程抓取 commit JSON | 資料小、變動慢、零伺服器；沿用 legislator-background 模式 |
 | 個人頁 | 有，`noindex` | 可分享，但撤緝後不殘留在搜尋結果 |
 | 出生日期 | 保留完整年月日 | 官方已公告完整日期，使用者決定沒有法律疑慮就留 |
-| 身分證字號 | 遮蔽為前三碼＋`*`，全碼不落地 | 全碼是冒用材料；調查局列表頁自己也遮 |
+| 身分證字號 | 遮蔽為前三碼＋7 個 `*`，全碼不落地 | 全碼是冒用材料；調查局列表頁自己也遮 |
+| 測試 fixture | 手寫、仿真結構、假資料 | repo 公開，fixture 不能含真實姓名與證號 |
+| OG 字型 | commit `fonts/NotoSansTC-Regular.otf`（OFL） | satori 需要 TTF/OTF；build 機器無中文字型 |
 | 護照號碼 | 不保留 | 對公眾辨認無幫助 |
 | 歷史 | 不保留，不標「已到案」 | 官方消失即下架，避免散布已非通緝者的資料 |
 | OG 圖 | build 時產文字卡，不用當事人照片 | 避免轉貼預覽即大頭照 |
@@ -44,13 +46,15 @@ interface WantedRecord {
   name: string;
   nameEn?: string;       // 調查局有
   gender?: "male" | "female";
-  birthDate?: string;    // ISO "YYYY-MM-DD"，民國年轉西元
+  birthYear?: number;    // 兩個來源都有（調查局只給年）
+  birthDate?: string;    // ISO "YYYY-MM-DD"，民國年轉西元；調查局已遮月日，故只有刑事局有
   idMasked?: string;     // "B10*******"
   photo: string | null;  // "photos/<id>.jpg"；null 用預設圖
   wantedUnit: string;    // 通緝機關
   accusation: string;    // 罪名原文
   category: Category;    // 由 accusation 歸類
-  facts?: string;        // 涉嫌事實
+  reason?: string;       // 查緝原因（刑事局）
+  facts?: string;        // 涉嫌事實（調查局）
   hidePosition?: string; // 可能藏匿地點（刑事局）
   fledTo?: string;       // 可能潛逃地點（調查局）
   fledAt?: string;       // 可能潛逃時間（調查局）
@@ -62,7 +66,7 @@ interface WantedRecord {
   fetchedAt: string;     // ISO datetime
 }
 
-type Category = "毒品" | "詐欺" | "貪污" | "洗錢" | "槍砲" | "組織犯罪" | "殺人傷害" | "其他";
+type Category = "殺人傷害" | "性侵" | "毒品" | "詐欺" | "貪污" | "洗錢" | "槍砲" | "組織犯罪" | "其他";
 ```
 
 `data/meta.json`：
@@ -85,14 +89,15 @@ interface Meta {
 `pnpm fetch` 執行 `scripts/fetch.ts`：
 
 1. **刑事局** (`scripts/sources/cib.ts`)
-   - GET JSON 端點（`mserno` 參數從列表頁 HTML 動態取，不寫死）。
-   - GET 列表頁各分頁，蒐集全部筆的連結；JSON 中沒有的筆，抓詳細頁補齊。
-   - key：`publishNo`。
+   - GET 列表頁 `list?module=wanted&id=1889&page=N`（每頁 16 筆，頁數從 `<select id="page">` 讀），蒐集每筆的 `serno`。
+   - 每筆 GET 單筆 JSON `openData/wanted/data?module=wanted&serno=<serno>&type=json`（不需 cookie）。不用整批 JSON 端點，因為它固定只回 100 筆且沒有 `serno`。
+   - key：`serno`（`publishNo` 不唯一，實測 100 筆只有 87 個不同值）。
 2. **調查局** (`scripts/sources/mjib.ts`)
    - GET `Crimes_List` 全部分頁，取所有 `Crimes_Detail?uid=N`。
    - 逐一 GET 詳細頁。
    - key：`uid`。
-   - 請求間隔 500ms，不並發。
+   - 調查局詳細頁已遮出生月日（`1950/**/**`）、身分證後四碼、護照後三碼，只取年。
+   - 兩個來源請求間隔皆 500ms，不並發。
 3. **正規化** (`scripts/normalize.ts`)：兩種原始格式 → `WantedRecord`；遮蔽；民國年轉西元；罪名歸類。
 4. **照片** (`scripts/photos.ts`)：下載到 `public/photos/<id>.jpg`，sharp 縮至長邊 480px、去 EXIF、JPEG 品質 80。下載失敗 → `photo: null`，記 errors。
 5. **防線** (`scripts/guard.ts`)，每個來源獨立判斷：
@@ -130,7 +135,7 @@ OG 圖：build 時用 satori + resvg 產 1200×630 文字卡（姓名、罪名�
 taiwan-wanted/
   .nvmrc (22)  package.json (pnpm)  astro.config.mjs  tsconfig.json
   scripts/
-    fetch.ts  sources/cib.ts  sources/mjib.ts  normalize.ts  photos.ts  guard.ts
+    fetch.ts  http.ts  sources/cib.ts  sources/mjib.ts  normalize.ts  photos.ts  guard.ts
   data/wanted.json  data/meta.json
   public/photos/
   src/
@@ -138,7 +143,7 @@ taiwan-wanted/
     components/WantedList.svelte  components/Card.astro
     lib/categories.ts  lib/types.ts
   test/
-    fixtures/cib.json  fixtures/cib-list.html  fixtures/mjib-list.html  fixtures/mjib-detail.html
+    fixtures/cib-list.html  fixtures/cib-record.json  fixtures/mjib-list.html  fixtures/mjib-detail.html
     normalize.test.ts  guard.test.ts  cib.test.ts  mjib.test.ts  build.test.ts
   .github/workflows/fetch.yml
   docs/superpowers/specs/
