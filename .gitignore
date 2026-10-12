@@ -4,6 +4,7 @@ dist
 .DS_Store
 .tmp
 .superpowers
+.superdesign/
 # 資料與照片只存在 site 分支（每日 force-push 的單一 commit），master 不留歷史
 data/wanted.json
 data/meta.json

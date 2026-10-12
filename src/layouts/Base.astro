@@ -20,15 +20,24 @@ const url = new URL(Astro.url.pathname, Astro.site);
   <meta property="og:site_name" content={SITE_NAME} />
   {ogImage && <meta property="og:image" content={new URL(ogImage, Astro.site)} />}
   <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap" />
 </head>
 <body>
+  <a class="skip-link" href="#main">跳至主要內容</a>
   <header class="site"><div class="wrap">
-    <h1><a href="/" style="text-decoration:none">{SITE_NAME}</a></h1>
-    <nav><a href="/about">關於與資料來源</a><a href="/data.json">JSON</a></nav>
+    <a class="brand" href="/" aria-label={SITE_NAME}>
+      <span class="brand-mark" aria-hidden="true">緝</span>
+      <span><span class="brand-name">台灣通緝要犯名單</span><span class="brand-caption">TAIWAN WANTED BULLETIN</span></span>
+    </a>
+    <nav aria-label="主要導覽"><a href="/" aria-current={Astro.url.pathname === "/" ? "page" : undefined}>通緝公告</a><a href="/about" aria-current={Astro.url.pathname.startsWith("/about") ? "page" : undefined}>關於與資料來源</a><a class="data-link" href="/data.json">開放資料 <span aria-hidden="true">↗</span></a></nav>
   </div></header>
-  <main class="wrap"><slot /></main>
+  <main id="main" class="wrap"><slot /></main>
   <footer class="site"><div class="wrap">
-    資料來自內政部警政署刑事警察局與法務部調查局之公開公告，每日同步。本站非官方，資料以通緝機關最新公告為準。
+    <div class="footer-title">台灣通緝要犯名單<span>TAIWAN WANTED BULLETIN</span></div>
+    <p>資料來自刑事警察局與法務部調查局的公開公告，每日同步。<br />本站為非官方彙整，以通緝機關最新公告為準。</p>
+    <a href="/about">資料來源與下架說明 <span aria-hidden="true">↗</span></a>
   </div></footer>
 </body>
 </html>

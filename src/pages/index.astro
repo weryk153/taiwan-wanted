@@ -6,9 +6,14 @@ const { records, meta } = loadData();
 const stale = meta.sources.cib.stale || meta.sources.mjib.stale;
 ---
 <Base title="名單">
-  <p class="count">
-    資料時間 {meta.fetchedAt.slice(0, 10)}。刑事局 {meta.sources.cib.count} 筆、調查局 {meta.sources.mjib.count} 筆。
-    {stale && <strong>部分來源本次同步失敗，顯示的是上一版資料。</strong>}
-  </p>
+  <section class="hero">
+    <div class="edition"><span>公開通緝公告彙整 <span class="edition-divider">/</span> PUBLIC NOTICE</span><span>資料日期 <time datetime={meta.fetchedAt}>{meta.fetchedAt.slice(0, 10).replaceAll("-", ".")}</time></span></div>
+    <div class="hero-heading">
+      <div class="hero-title"><p class="wanted-word" aria-hidden="true">WANTED</p><h1 class="big">通緝要犯<span>公開查緝・全民協尋</span></h1></div>
+      <div class="hero-note"><span class="notice-stamp">協助查緝</span><p>每一條線索，<br />都可能是關鍵。</p><span>刑事局・調查局公開資料彙整</span></div>
+    </div>
+    <div class="hero-bottom"><p class="lede">彙整刑事局重要緊急查緝專案與調查局外逃通緝犯公告。<br class="desktop-break" />有相關線索，請直接聯絡公告所列的通緝機關。</p><dl class="stats"><div><dt>公告人數</dt><dd>{records.length}<span>人</span></dd></div><div><dt>刑事局</dt><dd>{meta.sources.cib.count}</dd></div><div><dt>調查局</dt><dd>{meta.sources.mjib.count}</dd></div></dl></div>
+    {stale && <p class="warn">部分來源本次同步失敗，顯示的是上一版資料。</p>}
+  </section>
   <WantedList client:load records={records} />
 </Base>
