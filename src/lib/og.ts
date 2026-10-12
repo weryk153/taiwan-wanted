@@ -14,15 +14,16 @@ export async function renderOg(r: Pick<WantedRecord, "name" | "accusation" | "wa
     {
       type: "div",
       props: {
-        style: { width: 1200, height: 630, display: "flex", flexDirection: "column", justifyContent: "space-between", padding: 64, background: "#1a1a1a", color: "#fff", fontFamily: "Noto Sans TC" },
+        // 頁首與頁尾用絕對定位釘在畫布內；中段用 lineHeight 1.15 免得 96px 字把版面撐出 630。
+        style: { width: 1200, height: 630, display: "flex", flexDirection: "column", justifyContent: "center", padding: "0 64px", background: "#1a1a1a", color: "#fff", fontFamily: "Noto Sans TC", lineHeight: 1.15 },
         children: [
-          { type: "div", props: { style: { fontSize: 28, color: "#bbb" }, children: SOURCE_LABEL[r.source] } },
+          { type: "div", props: { style: { position: "absolute", top: 56, left: 64, fontSize: 28, color: "#bbb" }, children: SOURCE_LABEL[r.source] } },
           { type: "div", props: { style: { display: "flex", flexDirection: "column", gap: 16 }, children: [
             { type: "div", props: { style: { fontSize: 96, fontWeight: 400 }, children: r.name } },
             { type: "div", props: { style: { fontSize: 40, color: "#e5535c" }, children: clip(r.accusation || "通緝", 24) } },
             { type: "div", props: { style: { fontSize: 32, color: "#bbb" }, children: clip(r.wantedUnit, 30) } },
           ] } },
-          { type: "div", props: { style: { fontSize: 28, color: "#888" }, children: "台灣通緝要犯名單 · 以通緝機關最新公告為準" } },
+          { type: "div", props: { style: { position: "absolute", bottom: 56, left: 64, fontSize: 28, color: "#888" }, children: "台灣通緝要犯名單 · 以通緝機關最新公告為準" } },
         ],
       },
     },
