@@ -34,6 +34,7 @@
 | 歷史 | 不保留，不標「已到案」 | 官方消失即下架，避免散布已非通緝者的資料 |
 | OG 圖 | build 時產文字卡，不用當事人照片 | 避免轉貼預覽即大頭照 |
 | Repo | 公開 | 讓人驗證遮蔽與下架邏輯 |
+| 資料在 git 的位置 | 不進 master；每日做成單一 orphan commit force-push 到 `site` 分支 | 公開 repo 若累積資料 commit，已下架者永遠留在可瀏覽歷史，與「不保留歷史」矛盾（審查發現） |
 
 ## 資料模型
 
@@ -130,8 +131,9 @@ OG 圖：build 時用 satori + resvg 產 1200×630 文字卡（姓名、罪名�
 
 ## 更新與部署
 
-- `.github/workflows/fetch.yml`：cron 每日 22:00 UTC（台灣 06:00）＋ `workflow_dispatch`。跑 `pnpm sync`；`data/` 或 `public/photos/` 有 diff 才 commit，訊息 `data: YYYY-MM-DD +N -M`。
-- Cloudflare Pages 連 repo，`pnpm build`，輸出 `dist/`。先用 `*.pages.dev`。
+- `.github/workflows/fetch.yml`：cron 每日 22:00 UTC（台灣 06:00）＋ `workflow_dispatch`。先從 `site` 分支取上一版資料（guard 比對、照片快取），跑 `pnpm sync`，驗證輸出無完整證號，再以 master 程式碼＋資料建立 orphan commit force-push 到 `site`。`site` 永遠只有一個 commit。
+- `master` 的 `.gitignore` 排除 `data/*.json` 與 `public/photos/*.jpg`。`test.yml` 在 master 跑測試時從 `site` 取資料；取不到就略過 build 測試。
+- Cloudflare Pages 連 repo，production branch `site`，`pnpm build`，輸出 `dist/`。先用 `*.pages.dev`。
 - 回報下架走 GitHub Issues（公開；下架標準是官方已撤銷這個客觀事實，不需驗證回報者身分）。處理原則（寫在 about）：官方已下架 → 手動移除或等下次同步；官方仍公告 → 不刪，請對方洽通緝機關。
 
 ## 專案結構

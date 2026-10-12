@@ -11,6 +11,9 @@ concurrency:
   group: fetch
   cancel-in-progress: false
 
+# 資料與照片不進 master。每天把 master 的程式碼加上最新資料做成一個 orphan commit，
+# force-push 到 site 分支（Cloudflare Pages 的 production branch）。site 永遠只有一個 commit，
+# 已下架的人不會留在可瀏覽的 git 歷史裡。
 jobs:
   fetch:
     runs-on: ubuntu-latest
@@ -18,27 +21,43 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with: { version: 10 }
       - uses: actions/setup-node@v4
         with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+
+      - name: 取上一版資料（給 guard 比對與照片快取）
+        run: |
+          if git fetch --depth=1 origin site 2>/dev/null; then
+            git checkout FETCH_HEAD -- data public/photos || true
+            git reset -q -- data public/photos
+          else
+            echo "site 分支不存在，視為第一次"
+          fi
+
       - name: sync
         id: sync
         run: pnpm sync
         continue-on-error: true
-      - name: commit
+
+      - name: 驗證輸出沒有完整證號
+        run: |
+          test -s data/wanted.json
+          ! grep -qE '"[A-Z][12][0-9]{8}"' data/wanted.json
+
+      - name: 發布到 site 分支（單一 commit）
         run: |
           git config user.name "taiwan-wanted bot"
           git config user.email "actions@users.noreply.github.com"
-          git add data public/photos
-          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
-          ADD=$(git diff --cached --numstat data/wanted.json | awk '{print $1}')
-          DEL=$(git diff --cached --numstat data/wanted.json | awk '{print $2}')
-          git commit -m "data: $(date -u +%F) +${ADD:-0} -${DEL:-0}"
-          git pull --rebase origin "${GITHUB_REF_NAME}"
-          git push
+          CIB=$(node -e 'console.log(require("./data/meta.json").sources.cib.count)')
+          MJIB=$(node -e 'console.log(require("./data/meta.json").sources.mjib.count)')
+          git checkout -q --orphan site-next
+          git add -A
+          git add -f data/wanted.json data/meta.json public/photos/*.jpg
+          git commit -q -m "site: $(date -u +%F) cib=$CIB mjib=$MJIB"
+          git push --force origin site-next:site
+
       - name: fail if stale
         if: steps.sync.outcome == 'failure'
         run: |
-          echo "::error::某來源同步失敗，已沿用上一版資料，請看 sync 步驟 log"
+          echo "::error::sync 非零結束（某來源 stale 或崩潰），site 已用可用的資料更新，請看 sync 步驟 log"
           exit 1

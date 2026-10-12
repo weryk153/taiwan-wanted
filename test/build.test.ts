@@ -5,11 +5,14 @@ import { readFileSync, existsSync } from "node:fs";
 const ROOT = new URL("..", import.meta.url).pathname;
 const read = (p: string) => readFileSync(`${ROOT}/dist/${p}`, "utf8");
 
+const HAS_DATA = existsSync(`${ROOT}/data/wanted.json`);
+
 beforeAll(() => {
-  execSync("pnpm build", { cwd: ROOT, stdio: "inherit" });
+  if (HAS_DATA) execSync("pnpm build", { cwd: ROOT, stdio: "inherit" });
 }, 300_000);
 
-describe("build", () => {
+// master 不含資料；本機先 `pnpm sync`，CI 從 site 分支取。沒有資料就整組略過。
+describe.skipIf(!HAS_DATA)("build", () => {
   const records = JSON.parse(readFileSync(`${ROOT}/data/wanted.json`, "utf8"));
 
   it("首頁可索引、含搜尋框", () => {

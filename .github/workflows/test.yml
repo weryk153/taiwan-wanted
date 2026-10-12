@@ -1,7 +1,7 @@
 name: test
 on:
   push:
-    paths-ignore: ["data/**", "public/photos/**"]
+    branches-ignore: [site]
   pull_request:
 
 jobs:
@@ -10,8 +10,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with: { version: 10 }
       - uses: actions/setup-node@v4
         with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - name: 從 site 分支取資料（build 測試用；沒有就略過 build 測試）
+        run: |
+          if git fetch --depth=1 origin site 2>/dev/null; then
+            git checkout FETCH_HEAD -- data public/photos
+            git reset -q -- data public/photos
+          fi
       - run: pnpm test
