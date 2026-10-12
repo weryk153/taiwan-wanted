@@ -3,6 +3,7 @@ import { mkdtempSync, existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import sharp from "sharp";
+import bmp from "bmp-js";
 import { savePhoto } from "../scripts/photos";
 import type { Http } from "../scripts/http";
 
@@ -37,6 +38,23 @@ describe("savePhoto", () => {
     const out = join(dir, "n.jpg");
     expect(await savePhoto(http, "u", out)).toBe(false);
     expect(existsSync(out)).toBe(false);
+  });
+  it("BMP 內容但標成 image/jpeg（調查局實況）→ 解碼成功、顏色正確", async () => {
+    const w = 6, h = 4;
+    const data = Buffer.alloc(w * h * 4);
+    for (let i = 0; i < w * h; i++) { data[i * 4] = 0; data[i * 4 + 1] = 0; data[i * 4 + 2] = 0; data[i * 4 + 3] = 255; } // ABGR → 紅
+    const encoded = bmp.encode({ data, width: w, height: h }).data;
+    const http: Http = async () => new Response(encoded, { status: 200, headers: { "content-type": "image/jpeg" } });
+    const out = join(dir, "bmp.jpg");
+    expect(await savePhoto(http, "u", out)).toBe(true);
+    const img = sharp(out);
+    const meta = await img.metadata();
+    expect(meta.format).toBe("jpeg");
+    expect(meta.width).toBe(6);
+    const px = await img.raw().toBuffer();
+    expect(px[0]).toBeGreaterThan(200); // R
+    expect(px[1]).toBeLessThan(40);     // G
+    expect(px[2]).toBeLessThan(40);     // B
   });
   it("HTTP 失敗 → false", async () => {
     const http: Http = async () => new Response("", { status: 404 });

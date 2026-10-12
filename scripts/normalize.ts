@@ -64,6 +64,22 @@ const clean = (s: string | undefined): string | undefined => {
   return t && t !== "不詳" ? t : undefined;
 };
 
+/**
+ * 調查局欄位是「中文 + 英文翻譯」黏在一起。砍掉最後一個中文字之後的英文段，
+ * 中間夾的英文（如 IPPBX）保留；完全沒中文的值原樣回傳。
+ */
+export function stripTrailingEnglish(s: string | undefined): string | undefined {
+  if (!s) return undefined;
+  const t = s.replace(/\s+/g, " ").trim();
+  const lastCjk = t.search(/[\u4e00-\u9fff](?![\s\S]*[\u4e00-\u9fff])/);
+  if (lastCjk < 0) return t;
+  const tail = t.slice(lastCjk + 1);
+  const latin = tail.search(/[A-Za-z]/);
+  if (latin < 0) return t;
+  return t.slice(0, lastCjk + 1 + latin).trim();
+}
+const cleanZh = (s: string | undefined) => clean(stripTrailingEnglish(s));
+
 export function normalizeCib(raw: CibRaw, fetchedAt: string): Normalized {
   const d = raw.data;
   const birthDate = rocToIso(d.birth);
@@ -98,7 +114,7 @@ export function normalizeMjib(raw: MjibRaw, fetchedAt: string): Normalized {
   const f = raw.fields;
   const yearMatch = (f["出生年月日"] ?? "").match(/^(\d{4})/);
   const publishedAt = rocToIso(f["通緝時間"]);
-  const accusation = clean(f["通緝罪名"]) ?? "";
+  const accusation = cleanZh(f["通緝罪名"]) ?? "";
   const record: WantedRecord = {
     id: `mjib-${raw.uid}`,
     source: "mjib",
@@ -107,12 +123,12 @@ export function normalizeMjib(raw: MjibRaw, fetchedAt: string): Normalized {
     birthYear: yearMatch ? Number(yearMatch[1]) : undefined,
     idMasked: maskId(f["身分證統一編號"]),
     photo: null,
-    wantedUnit: clean(f["通緝機關"]) ?? "",
+    wantedUnit: cleanZh(f["通緝機關"]) ?? "",
     accusation,
     category: categorize(accusation),
-    facts: clean(f["涉嫌事實"]),
-    fledTo: clean(f["可能潛逃地點"]),
-    fledAt: clean(f["可能潛逃時間"]),
+    facts: cleanZh(f["涉嫌事實"]),
+    fledTo: cleanZh(f["可能潛逃地點"]),
+    fledAt: cleanZh(f["可能潛逃時間"]),
     sourceUrl: `https://www.mjib.gov.tw/Crimes/Crimes_Detail?uid=${raw.uid}`,
     publishedAt,
     updatedAt: publishedAt ?? fetchedAt.slice(0, 10),

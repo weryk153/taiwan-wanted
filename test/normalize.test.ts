@@ -39,8 +39,12 @@ describe("categorize", () => {
     ["洗錢防制法", "洗錢"],
     ["槍砲彈藥刀械管制條例", "槍砲"],
     ["組織犯罪防制條例", "組織犯罪"],
+    ["證券交易法", "經濟犯罪"],
+    ["違反銀行法", "經濟犯罪"],
+    ["侵占", "經濟犯罪"],
+    ["背信", "經濟犯罪"],
     ["", "其他"],
-    ["違反銀行法", "其他"],
+    ["妨害自由", "其他"],
   ])("%s → %s", (input, expected) => expect(categorize(input)).toBe(expected));
 });
 
@@ -105,6 +109,36 @@ describe("normalizeCib", () => {
   it("updateDate 空時用 posterDate", () => {
     const r = normalizeCib({ ...raw, data: { ...raw.data, updateDate: "" } }, FETCHED);
     expect(r.record.updatedAt).toBe("2026-09-15");
+  });
+});
+
+describe("normalizeMjib 去掉尾端英文", () => {
+  const raw = {
+    uid: 1,
+    fields: {
+      "中文姓名": "余劍涵（別名 JANUS YU)",
+      "通緝罪名": "毒品危害防制條例 \tNarcotics Hazard Prevention Act",
+      "通緝機關": "臺灣臺北地方檢察署Taiwan Taipei District Prosecutors Office",
+      "可能潛逃地點": "大陸P.R.C.(China) in October 2013",
+      "可能潛逃時間": "不詳unknown",
+      "涉嫌事實": "王某自114年7月間寄送網路電話交換機（即IPPBX）來臺。Suspected of smuggling.",
+      "出生年月日": "1980/**/**",
+    },
+  };
+  const { record } = normalizeMjib(raw, FETCHED);
+  it("罪名、機關、地點只留中文，空白正規化", () => {
+    expect(record.accusation).toBe("毒品危害防制條例");
+    expect(record.wantedUnit).toBe("臺灣臺北地方檢察署");
+    expect(record.fledTo).toBe("大陸");
+  });
+  it("不詳 + 英文 → undefined", () => expect(record.fledAt).toBeUndefined());
+  it("事實保留中間的英文、去掉尾端英文段", () => {
+    expect(record.facts).toBe("王某自114年7月間寄送網路電話交換機（即IPPBX）來臺。");
+  });
+  it("姓名不動", () => expect(record.name).toBe("余劍涵（別名 JANUS YU)"));
+  it("純英文值不動", () => {
+    const r = normalizeMjib({ uid: 2, fields: { "可能潛逃時間": "October 2012" } }, FETCHED);
+    expect(r.record.fledAt).toBe("October 2012");
   });
 });
 

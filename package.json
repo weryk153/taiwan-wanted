@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "fetch": "tsx scripts/fetch.ts",
+    "sync": "tsx scripts/fetch.ts",
     "test": "vitest run",
     "dev": "astro dev",
     "build": "astro build",
@@ -16,6 +16,7 @@
     "@astrojs/svelte": "^9.0.1",
     "@resvg/resvg-js": "^2.6.2",
     "astro": "^7.3.8",
+    "bmp-js": "^0.1.0",
     "cheerio": "^1.2.0",
     "he": "^2.0.0",
     "satori": "^0.48.1",
@@ -23,6 +24,7 @@
     "svelte": "^5.57.2"
   },
   "devDependencies": {
+    "@types/bmp-js": "^0.1.2",
     "@types/he": "^1.2.3",
     "@types/node": "^26.6.5",
     "tsx": "^4.23.15",

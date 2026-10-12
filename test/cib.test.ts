@@ -42,16 +42,20 @@ describe("fetchCib", () => {
       "22222222-2222-2222-2222-222222222222",
     ]);
     expect(out[0].data.publishNo).toBe("1150915-1");
-    expect(calls.filter((u) => u.includes("/wanted/list?"))).toHaveLength(1);
+    expect(calls.filter((u) => u.includes("/wanted/list?"))).toEqual([
+      "https://www.cib.npa.gov.tw/ch/app/wanted/list?module=wanted&id=1889&page=0",
+    ]);
     expect(calls.filter((u) => u.includes("/openData/wanted/data?"))).toHaveLength(2);
   });
 
-  it("分頁數 > 1 時逐頁抓且去重", async () => {
+  it("分頁從 0 開始到 pageCount-1，逐頁抓且去重", async () => {
+    const pages: string[] = [];
     const http: Http = async (url) => {
-      if (url.includes("/wanted/list?")) return new Response(listHtml, { status: 200 });
+      if (url.includes("/wanted/list?")) { pages.push(url.split("page=")[1]); return new Response(listHtml, { status: 200 }); }
       return new Response(record, { status: 200 });
     };
     const out = await fetchCib(http);
+    expect(pages).toEqual(["0", "1", "2", "3", "4", "5", "6"]);
     expect(out).toHaveLength(2); // 七頁都回同兩筆 → 去重後 2
   });
 

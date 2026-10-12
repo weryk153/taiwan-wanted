@@ -1,5 +1,5 @@
 export const CATEGORIES = [
-  "殺人傷害", "性侵", "毒品", "詐欺", "貪污", "洗錢", "槍砲", "組織犯罪", "其他",
+  "殺人傷害", "性侵", "毒品", "詐欺", "貪污", "洗錢", "槍砲", "組織犯罪", "經濟犯罪", "其他",
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
 

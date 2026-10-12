@@ -66,7 +66,7 @@ interface WantedRecord {
   fetchedAt: string;     // ISO datetime
 }
 
-type Category = "殺人傷害" | "性侵" | "毒品" | "詐欺" | "貪污" | "洗錢" | "槍砲" | "組織犯罪" | "其他";
+type Category = "殺人傷害" | "性侵" | "毒品" | "詐欺" | "貪污" | "洗錢" | "槍砲" | "組織犯罪" | "經濟犯罪" | "其他";
 ```
 
 `data/meta.json`：
@@ -89,7 +89,7 @@ interface Meta {
 `pnpm fetch` 執行 `scripts/fetch.ts`：
 
 1. **刑事局** (`scripts/sources/cib.ts`)
-   - GET 列表頁 `list?module=wanted&id=1889&page=N`（每頁 16 筆，頁數從 `<select id="page">` 讀），蒐集每筆的 `serno`。
+   - GET 列表頁 `list?module=wanted&id=1889&page=N`，**N 從 0 起算**（page=0 是最新 16 筆，最後一頁是 pageCount-1；頁數從 `<select id="page">` 讀）。實測 104 筆剛好 7 頁。
    - 每筆 GET 單筆 JSON `openData/wanted/data?module=wanted&serno=<serno>&type=json`（不需 cookie）。不用整批 JSON 端點，因為它固定只回 100 筆且沒有 `serno`。
    - key：`serno`（`publishNo` 不唯一，實測 100 筆只有 87 個不同值）。
 2. **調查局** (`scripts/sources/mjib.ts`)
@@ -97,6 +97,8 @@ interface Meta {
    - 逐一 GET 詳細頁。
    - key：`uid`。
    - 調查局詳細頁已遮出生月日（`1950/**/**`）、身分證後四碼、護照後三碼，只取年。
+   - 調查局欄位是「中文＋英文翻譯」黏在一起（罪名、機關、潛逃地點、時間、事實），正規化時砍掉最後一個中文字之後的英文段，姓名不動。
+   - 調查局約 4% 照片是 BMP 卻標 `image/jpeg`，用 bmp-js 先解碼再交給 sharp。
    - 兩個來源請求間隔皆 500ms，不並發。
 3. **正規化** (`scripts/normalize.ts`)：兩種原始格式 → `WantedRecord`；遮蔽；民國年轉西元；罪名歸類。
 4. **照片** (`scripts/photos.ts`)：下載到 `public/photos/<id>.jpg`，sharp 縮至長邊 480px、去 EXIF、JPEG 品質 80。下載失敗 → `photo: null`，記 errors。
@@ -105,7 +107,7 @@ interface Meta {
    - 單筆失敗 → 略過，`errors + 1`，不影響整批。
 6. **寫檔**：`data/wanted.json`、`data/meta.json`；刪除本版不存在的 id 對應照片。
 
-罪名歸類 (`src/lib/categories.ts`)：關鍵字表，順序比對，第一個命中即歸類；全部不命中為「其他」。不做模糊推測。
+罪名歸類 (`src/lib/categories.ts`)：關鍵字表，順序比對，第一個命中即歸類；全部不命中為「其他」。不做模糊推測。「經濟犯罪」涵蓋證券交易法、銀行法、侵占、背信、期貨、保險法、公司法、商業會計法、稅捐、票據，因調查局名單四成是這類。
 
 ## 網站
 

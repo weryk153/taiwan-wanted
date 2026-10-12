@@ -19,11 +19,12 @@ export function parseCibListPage(html: string): { sernos: string[]; pageCount: n
 }
 
 export async function fetchCib(http: Http, log: (m: string) => void = () => {}): Promise<CibRaw[]> {
-  const first = await http(`${LIST}&page=1`);
-  if (!first.ok) throw new Error(`cib list page 1: HTTP ${first.status}`);
+  // 刑事局的 page 參數從 0 起算：page=0 是最新的 16 筆，最後一頁是 pageCount-1。
+  const first = await http(`${LIST}&page=0`);
+  if (!first.ok) throw new Error(`cib list page 0: HTTP ${first.status}`);
   const p1 = parseCibListPage(await first.text());
   const sernos = [...p1.sernos];
-  for (let page = 2; page <= p1.pageCount; page += 1) {
+  for (let page = 1; page < p1.pageCount; page += 1) {
     const res = await http(`${LIST}&page=${page}`);
     if (!res.ok) throw new Error(`cib list page ${page}: HTTP ${res.status}`);
     for (const s of parseCibListPage(await res.text()).sernos) {
