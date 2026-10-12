@@ -79,7 +79,8 @@ export function stripTrailingEnglish(s: string | undefined): string | undefined 
   const tail = t.slice(lastCjk + 1);
   const latin = tail.search(/[A-Za-z]/);
   if (latin < 0) return t;
-  return t.slice(0, lastCjk + 1 + latin).trim();
+  // 砍掉英文段後，殘留在尾端的分隔符（斜線、括號、逗號）一起去掉。
+  return t.slice(0, lastCjk + 1 + latin).replace(/[\s\/\\(（,，、:：;；-]+$/, "").trim();
 }
 const cleanZh = (s: string | undefined) => clean(stripTrailingEnglish(s));
 

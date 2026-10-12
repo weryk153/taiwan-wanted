@@ -1,19 +1,41 @@
 ---
 import Base from "../layouts/Base.astro";
 import WantedList from "../components/WantedList.svelte";
+import PosterGrid from "../components/PosterGrid.svelte";
 import { loadData } from "../lib/data";
+import { recentlyAdded } from "../lib/recent";
 const { records, meta } = loadData();
 const stale = meta.sources.cib.stale || meta.sources.mjib.stale;
+const recent = recentlyAdded(records, meta.fetchedAt, 7);
 ---
 <Base title="名單">
   <section class="hero">
-    <div class="edition"><span>公開通緝公告彙整 <span class="edition-divider">/</span> PUBLIC NOTICE</span><span>資料日期 <time datetime={meta.fetchedAt}>{meta.fetchedAt.slice(0, 10).replaceAll("-", ".")}</time></span></div>
-    <div class="hero-heading">
-      <div class="hero-title"><p class="wanted-word" aria-hidden="true">WANTED</p><h1 class="big">通緝要犯<span>公開查緝・全民協尋</span></h1></div>
-      <div class="hero-note"><span class="notice-stamp">協助查緝</span><p>每一條線索，<br />都可能是關鍵。</p><span>刑事局・調查局公開資料彙整</span></div>
-    </div>
-    <div class="hero-bottom"><p class="lede">彙整刑事局重要緊急查緝專案與調查局外逃通緝犯公告。<br class="desktop-break" />有相關線索，請直接聯絡公告所列的通緝機關。</p><dl class="stats"><div><dt>公告人數</dt><dd>{records.length}<span>人</span></dd></div><div><dt>刑事局</dt><dd>{meta.sources.cib.count}</dd></div><div><dt>調查局</dt><dd>{meta.sources.mjib.count}</dd></div></dl></div>
+    <h2 class="big">通緝</h2>
+    <p class="lede">
+      刑事局重要緊急查緝專案與調查局外逃通緝犯，每日彙整。
+      <strong>{meta.fetchedAt.slice(0, 10)}</strong> 共 <strong>{records.length}</strong> 人，刑事局 {meta.sources.cib.count}、調查局 {meta.sources.mjib.count}。
+      有線索請直接聯絡各頁所列的通緝機關或檢舉電話。
+    </p>
     {stale && <p class="warn">部分來源本次同步失敗，顯示的是上一版資料。</p>}
   </section>
-  <WantedList client:load records={records} />
+
+  <section class="recent">
+    <h3>最近 7 天新增 <span class="n">{recent.length} 人</span></h3>
+    {recent.length > 0
+      ? <PosterGrid records={recent} />
+      : <p class="count">這 7 天沒有新公告。訂閱 <a href="/feed.xml">RSS</a> 可在新增時收到通知。</p>}
+  </section>
+
+  <section>
+    <h3>全部名單 <a class="sub-link" href="/unit/">依通緝機關</a><a class="sub-link" href="/c/">依罪名類別</a></h3>
+    <WantedList client:load records={records} />
+  </section>
 </Base>
+<style>
+  h3 { font: 900 1.5rem/1.2 var(--serif); letter-spacing: 0.08em; margin: 28px 0 12px; display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+  h3 .n { font: 500 1rem/1 var(--sans); color: var(--ink-2); }
+  .sub-link { font: 500 0.95rem/1 var(--sans); letter-spacing: 0; color: var(--ink-2); text-decoration: none; border-bottom: 2px solid currentColor; }
+  .sub-link:hover { color: var(--red); }
+  .recent :global(.grid) { padding-bottom: 8px; }
+  @media (prefers-color-scheme: dark) { h3 { color: #fff; } .sub-link, h3 .n { color: #c8c8c8; } }
+</style>

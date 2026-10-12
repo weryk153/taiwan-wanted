@@ -142,6 +142,13 @@ describe("normalizeMjib 去掉尾端英文", () => {
     expect(record.facts).toBe("王某自114年7月間寄送網路電話交換機（即IPPBX）來臺。");
   });
   it("姓名不動", () => expect(record.name).toBe("余劍涵（別名 JANUS YU)"));
+  it("砍完英文後尾端的斜線、括號、逗號也去掉", () => {
+    const r = normalizeMjib({ uid: 9, fields: { "通緝機關": "臺灣臺中地方法院/Taichung District Court", "可能潛逃地點": "泰國/ Thailand", "涉嫌事實": "涉嫌違反銀行法等/ Banking Act", "通緝罪名": "侵占（ Misappropriation" } }, FETCHED);
+    expect(r.record.wantedUnit).toBe("臺灣臺中地方法院");
+    expect(r.record.fledTo).toBe("泰國");
+    expect(r.record.facts).toBe("涉嫌違反銀行法等");
+    expect(r.record.accusation).toBe("侵占");
+  });
   it("事實裡的完整證號會被遮", () => {
     const r = normalizeMjib({ uid: 3, fields: { "涉嫌事實": "冒用 A123456789 開戶。" } }, FETCHED);
     expect(r.record.facts).toBe("冒用 A12******* 開戶。");

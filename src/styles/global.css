@@ -241,3 +241,18 @@ footer.site a { text-decoration: none; white-space: nowrap; }
   footer.site .wrap { flex-direction: column; align-items: flex-start; gap: 18px; }
 }
 @media (prefers-reduced-motion: no-preference) { .poster { transition: transform 160ms ease, box-shadow 160ms ease, border-color 160ms ease; } }
+
+/* 列印：一張 A4 就是一張海報 */
+@media print {
+  @page { size: A4 portrait; margin: 12mm; }
+  html { background: #fff; }
+  header.site, footer.site, .actions, .back { display: none !important; }
+  .wrap { max-width: none; padding: 0; }
+  .sheet { margin: 0; box-shadow: none; border-width: 4px; grid-template-columns: 70mm 1fr; gap: 8mm; padding: 8mm; page-break-inside: avoid; }
+  .sheet .title { font-size: 28mm; }
+  .sheet .name { font-size: 16mm; }
+  .sheet .rows { font-size: 10.5pt; }
+  .sheet .reward { font-size: 10.5pt; }
+  .sheet .foot { font-size: 9pt; }
+  .sheet .foot a::after { content: " " attr(href); word-break: break-all; }
+}

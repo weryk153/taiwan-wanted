@@ -1,0 +1,28 @@
+---
+import Base from "../../layouts/Base.astro";
+import PosterGrid from "../../components/PosterGrid.svelte";
+import { loadData } from "../../lib/data";
+import { slugify } from "../../lib/slug";
+import type { WantedRecord } from "../../lib/types";
+
+export function getStaticPaths() {
+  const { records } = loadData();
+  const units = [...new Set(records.map((r) => r.wantedUnit).filter(Boolean))];
+  const seen = new Set<string>();
+  return units.flatMap((unit) => {
+    const slug = slugify(unit);
+    if (!slug || seen.has(slug)) return [];
+    seen.add(slug);
+    return [{ params: { unit: slug }, props: { unit, list: records.filter((r) => r.wantedUnit === unit) } }];
+  });
+}
+const { unit, list } = Astro.props as { unit: string; list: WantedRecord[] };
+---
+<Base title={unit} description={`${unit}目前公告的 ${list.length} 名通緝要犯`}>
+  <a class="back" href="/unit/">所有通緝機關</a>
+  <section class="hero">
+    <h2 class="big" style="font-size:clamp(40px,7vw,72px)">{unit}</h2>
+    <p class="lede">目前公告 <strong>{list.length}</strong> 人。</p>
+  </section>
+  <PosterGrid records={list} />
+</Base>

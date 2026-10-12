@@ -17,6 +17,8 @@ const url = new URL(Astro.url.pathname, Astro.site);
   <meta property="og:description" content={description} />
   <meta property="og:type" content="website" />
   <meta property="og:url" content={url} />
+  <link rel="canonical" href={url} />
+  <link rel="alternate" type="application/rss+xml" title="台灣通緝要犯名單" href={new URL("/feed.xml", Astro.site)} />
   <meta property="og:site_name" content={SITE_NAME} />
   {ogImage && <meta property="og:image" content={new URL(ogImage, Astro.site)} />}
   <meta name="twitter:card" content="summary_large_image" />

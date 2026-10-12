@@ -26,7 +26,10 @@ const desc = `${r.accusation || "通緝"}｜${r.wantedUnit}｜${SOURCE_LABEL[r.s
 const reward = r.reward ?? (r.reportTel ? `檢舉電話：\n${r.reportTel}` : undefined);
 ---
 <Base title={r.name} description={desc} noindex ogImage={`/og/${r.id}.png`}>
-  <a class="back" href="/">← 回通緝公告欄</a>
+  <div class="actions">
+    <a class="back" href="/">← 回通緝公告欄</a>
+    <button class="print" type="button" onclick="window.print()">列印海報</button>
+  </div>
   <article class="sheet">
     <div class="sheet-masthead"><strong aria-hidden="true">WANTED</strong><span>公開通緝公告 · PUBLIC NOTICE</span></div>
     <div class="pic">
@@ -55,3 +58,10 @@ const reward = r.reward ?? (r.reportTel ? `檢舉電話：\n${r.reportTel}` : un
     </div>
   </article>
 </Base>
+<style>
+  .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+  .actions .back { margin-top: 0; }
+  .print { font: 500 0.95rem/1 var(--sans); background: var(--ink); color: #fff; border: 2px solid var(--ink); padding: 10px 14px; cursor: pointer; }
+  .print:hover { background: var(--red); border-color: var(--red); }
+  .print:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+</style>
