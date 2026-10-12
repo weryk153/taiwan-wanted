@@ -115,7 +115,7 @@ Astro 5 靜態輸出，Svelte 5 只用在搜尋篩選 island。
 |---|---|
 | `/` | 全部名單卡片，依 `updatedAt` 倒序。搜尋框（姓名、罪名、通緝機關，前端子字串比對）。篩選：來源、類別。卡片：照片、姓名、出生年、罪名、通緝機關、來源標籤。 |
 | `/p/<id>` | 全部欄位、大圖、檢舉電話、官方原始頁連結、資料日期、「以通緝機關最新公告為準」。`<meta name="robots" content="noindex, nofollow">`。OG title／description／image。 |
-| `/about` | 來源、更新頻率、免責、刪除請求信箱與處理原則。 |
+| `/about` | 來源、更新頻率、免責、回報下架的 GitHub Issues 連結與處理原則。 |
 | `/data.json` | `data/wanted.json` 原樣輸出。 |
 | `/404` | 「此筆已不在官方公告中」，不顯示任何姓名。 |
 
@@ -127,7 +127,7 @@ OG 圖：build 時用 satori + resvg 產 1200×630 文字卡（姓名、罪名�
 
 - `.github/workflows/fetch.yml`：cron 每日 22:00 UTC（台灣 06:00）＋ `workflow_dispatch`。跑 `pnpm fetch`；`data/` 或 `public/photos/` 有 diff 才 commit，訊息 `data: YYYY-MM-DD +N -M`。
 - Cloudflare Pages 連 repo，`pnpm build`，輸出 `dist/`。先用 `*.pages.dev`。
-- 刪除請求處理原則（寫在 about）：官方已下架 → 等下次同步；官方仍公告 → 不刪，請對方洽通緝機關。
+- 回報下架走 GitHub Issues（公開；下架標準是官方已撤銷這個客觀事實，不需驗證回報者身分）。處理原則（寫在 about）：官方已下架 → 手動移除或等下次同步；官方仍公告 → 不刪，請對方洽通緝機關。
 
 ## 專案結構
 

@@ -714,7 +714,7 @@ Expected: FAIL，模組不存在。
 ```ts
 export type Http = (url: string) => Promise<Response>;
 
-const UA = "taiwan-wanted/1.0 (+https://github.com/kurenpeng/taiwan-wanted)";
+const UA = "taiwan-wanted/1.0 (+https://github.com/weryk153/taiwan-wanted)";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -1759,8 +1759,8 @@ git commit -m "feat: 列表頁與搜尋篩選"
     expect(html).toContain("已不在官方公告中");
     for (const r of records.slice(0, 20)) expect(html).not.toContain(r.name);
   });
-  it("about 有刪除請求信箱", () => {
-    expect(read("about/index.html")).toMatch(/mailto:/);
+  it("about 有回報下架的 GitHub Issues 連結", () => {
+    expect(read("about/index.html")).toContain("github.com/weryk153/taiwan-wanted/issues");
   });
 ```
 
@@ -1852,7 +1852,8 @@ import Base from "../layouts/Base.astro";
 import Base from "../layouts/Base.astro";
 import { loadData } from "../lib/data";
 const { meta } = loadData();
-const CONTACT = "weryk153@gmail.com";
+const ISSUES = "https://github.com/weryk153/taiwan-wanted/issues/new?template=takedown.md";
+const REPO = "https://github.com/weryk153/taiwan-wanted";
 ---
 <Base title="關於與資料來源">
   <h2>這是什麼</h2>
@@ -1876,11 +1877,11 @@ const CONTACT = "weryk153@gmail.com";
     <li>轉貼預覽圖不使用當事人照片。</li>
   </ul>
 
-  <h2>刪除請求</h2>
-  <p>若你是當事人或代理人，請來信 <a href={`mailto:${CONTACT}`}>{CONTACT}</a>。處理原則：官方已撤銷公告者，等待次日自動同步或手動立即移除；官方仍在公告者，本站不會移除，請洽通緝機關。</p>
+  <h2>回報下架</h2>
+  <p>若官方已撤銷公告但本站仍顯示，請到 <a href={ISSUES} rel="noopener" target="_blank">GitHub 開一個 Issue</a>，附上本站頁面網址即可，不需要說明你是誰。處理原則：官方已撤銷者，手動立即移除或等次日自動同步；官方仍在公告者，本站不會移除，請洽通緝機關。</p>
 
   <h2>程式碼</h2>
-  <p>抓取、遮蔽與下架邏輯全部公開於 GitHub，歡迎檢視。</p>
+  <p>抓取、遮蔽與下架邏輯全部公開於 <a href={REPO} rel="noopener" target="_blank">GitHub</a>，歡迎檢視。</p>
 </Base>
 ```
 
@@ -2042,7 +2043,7 @@ git commit -m "feat: 個人頁 OG 文字卡"
 ### Task 11: GitHub Actions 排程與 README
 
 **Files:**
-- Create: `.github/workflows/fetch.yml`、`.github/workflows/test.yml`、`README.md`
+- Create: `.github/workflows/fetch.yml`、`.github/workflows/test.yml`、`.github/ISSUE_TEMPLATE/takedown.md`、`README.md`
 
 **Interfaces:**
 - Consumes: `pnpm fetch`（exit 1 = stale）、`pnpm test`。
@@ -2114,7 +2115,25 @@ jobs:
       - run: pnpm test
 ```
 
-- [ ] **Step 3: README**
+- [ ] **Step 3: Issue 範本**
+
+`.github/ISSUE_TEMPLATE/takedown.md`:
+```markdown
+---
+name: 回報下架
+about: 官方已撤銷公告但本站仍顯示
+title: "下架：<本站頁面網址>"
+labels: takedown
+---
+
+本站頁面網址：
+
+官方頁面目前狀態（例如：已找不到、顯示已到案）：
+
+不需要提供你的身分。處理原則見 /about。
+```
+
+- [ ] **Step 4: README**
 
 `README.md`:
 ```markdown
@@ -2135,20 +2154,20 @@ jobs:
 Cloudflare Pages 連本 repo：build command `pnpm build`，output `dist`，Node 版本由 `.nvmrc` 決定。
 ```
 
-- [ ] **Step 4: 本機驗 commit 訊息邏輯**
+- [ ] **Step 5: 本機驗 commit 訊息邏輯**
 
 ```bash
 git diff --cached --quiet && echo "no changes (預期，因為沒 stage)"
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add .github README.md
 git commit -m "chore: 每日抓取與測試 workflow、README"
 ```
 
-- [ ] **Step 6: 建 GitHub repo 並推**
+- [ ] **Step 7: 建 GitHub repo 並推**
 
 ```bash
 gh repo create taiwan-wanted --public --source=. --push
