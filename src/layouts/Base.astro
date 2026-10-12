@@ -1,0 +1,34 @@
+---
+import "../styles/global.css";
+interface Props { title: string; description?: string; noindex?: boolean; ogImage?: string }
+const { title, description = "刑事局重要緊急查緝專案與調查局外逃通緝犯的每日彙整", noindex = false, ogImage } = Astro.props;
+const SITE_NAME = "台灣通緝要犯名單";
+const url = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title} | {SITE_NAME}</title>
+  <meta name="description" content={description} />
+  {noindex && <meta name="robots" content="noindex, nofollow" />}
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={url} />
+  <meta property="og:site_name" content={SITE_NAME} />
+  {ogImage && <meta property="og:image" content={new URL(ogImage, Astro.site)} />}
+  <meta name="twitter:card" content="summary_large_image" />
+</head>
+<body>
+  <header class="site"><div class="wrap">
+    <h1><a href="/" style="text-decoration:none">{SITE_NAME}</a></h1>
+    <nav><a href="/about">關於與資料來源</a><a href="/data.json">JSON</a></nav>
+  </div></header>
+  <main class="wrap"><slot /></main>
+  <footer class="site"><div class="wrap">
+    資料來自內政部警政署刑事警察局與法務部調查局之公開公告，每日同步。本站非官方，資料以通緝機關最新公告為準。
+  </div></footer>
+</body>
+</html>

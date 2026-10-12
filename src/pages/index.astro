@@ -1,0 +1,14 @@
+---
+import Base from "../layouts/Base.astro";
+import WantedList from "../components/WantedList.svelte";
+import { loadData } from "../lib/data";
+const { records, meta } = loadData();
+const stale = meta.sources.cib.stale || meta.sources.mjib.stale;
+---
+<Base title="名單">
+  <p class="count">
+    資料時間 {meta.fetchedAt.slice(0, 10)}。刑事局 {meta.sources.cib.count} 筆、調查局 {meta.sources.mjib.count} 筆。
+    {stale && <strong>部分來源本次同步失敗，顯示的是上一版資料。</strong>}
+  </p>
+  <WantedList client:load records={records} />
+</Base>

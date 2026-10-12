@@ -1,0 +1,30 @@
+:root {
+  --bg: #fafafa; --fg: #1a1a1a; --muted: #666; --card: #fff; --line: #e3e3e3; --accent: #b4232c;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #121212; --fg: #ececec; --muted: #9a9a9a; --card: #1c1c1c; --line: #2c2c2c; --accent: #e5535c; }
+}
+* { box-sizing: border-box; }
+html { font-family: system-ui, -apple-system, "PingFang TC", "Noto Sans TC", sans-serif; background: var(--bg); color: var(--fg); }
+body { margin: 0; }
+a { color: inherit; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 16px; }
+header.site { border-bottom: 1px solid var(--line); }
+header.site .wrap { display: flex; align-items: baseline; gap: 16px; }
+header.site h1 { font-size: 1.25rem; margin: 0; }
+header.site nav a { color: var(--muted); text-decoration: none; margin-left: 12px; }
+.grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+@media (min-width: 640px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 960px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+.card { display: flex; gap: 12px; background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px; text-decoration: none; }
+.card img, .card .noimg { width: 88px; height: 112px; object-fit: cover; border-radius: 4px; background: var(--line); flex: none; }
+.card .name { font-weight: 600; font-size: 1.05rem; }
+.card .sub { color: var(--muted); font-size: 0.9rem; margin-top: 4px; }
+.tag { display: inline-block; font-size: 0.75rem; padding: 2px 6px; border-radius: 4px; border: 1px solid var(--line); color: var(--muted); margin-right: 4px; }
+.tag.cat { border-color: var(--accent); color: var(--accent); }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 16px; }
+.toolbar input, .toolbar select { font: inherit; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--card); color: var(--fg); }
+.toolbar input { flex: 1 1 200px; }
+.count { color: var(--muted); font-size: 0.9rem; margin-bottom: 8px; }
+footer.site { color: var(--muted); font-size: 0.85rem; border-top: 1px solid var(--line); margin-top: 32px; }
