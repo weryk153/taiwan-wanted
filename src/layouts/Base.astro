@@ -33,7 +33,7 @@ const url = new URL(Astro.url.pathname, Astro.site);
       <span class="brand-mark" aria-hidden="true">緝</span>
       <span><span class="brand-name">台灣通緝要犯名單</span><span class="brand-caption">TAIWAN WANTED BULLETIN</span></span>
     </a>
-    <nav aria-label="主要導覽"><a href="/" aria-current={Astro.url.pathname === "/" ? "page" : undefined}>通緝公告</a><a href="/about" aria-current={Astro.url.pathname.startsWith("/about") ? "page" : undefined}>關於與資料來源</a><a class="data-link" href="/data.json">開放資料 <span aria-hidden="true">↗</span></a></nav>
+    <nav aria-label="主要導覽"><a href="/" aria-current={Astro.url.pathname === "/" ? "page" : undefined}>通緝公告</a><a href="/unit/" aria-current={Astro.url.pathname.startsWith("/unit/") ? "page" : undefined}>依機關</a><a href="/c/" aria-current={Astro.url.pathname.startsWith("/c/") ? "page" : undefined}>依類別</a><a href="/about" aria-current={Astro.url.pathname.startsWith("/about") ? "page" : undefined}>關於與資料來源</a><a class="data-link" href="/feed.xml">RSS</a><a class="data-link" href="/data.json">開放資料 <span aria-hidden="true">↗</span></a></nav>
   </div></header>
   <main id="main" class="wrap"><slot /></main>
   <footer class="site"><div class="wrap">
