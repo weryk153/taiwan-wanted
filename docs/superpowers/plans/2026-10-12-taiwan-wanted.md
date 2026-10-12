@@ -64,7 +64,7 @@ dist
   "private": true,
   "type": "module",
   "scripts": {
-    "fetch": "tsx scripts/fetch.ts",
+    "sync": "tsx scripts/fetch.ts",
     "test": "vitest run",
     "dev": "astro dev",
     "build": "astro build",
@@ -1442,7 +1442,7 @@ run().catch((e) => {
 
 ```bash
 touch data/.gitkeep public/photos/.gitkeep
-pnpm fetch
+pnpm sync
 ```
 
 Expected: log 顯示 `cib: 7 pages`、`mjib: 27 pages`，結尾 `cib≈104 mjib≈313 stale=false`，exit 0。約 4 分鐘。
@@ -2046,7 +2046,7 @@ git commit -m "feat: 個人頁 OG 文字卡"
 - Create: `.github/workflows/fetch.yml`、`.github/workflows/test.yml`、`.github/ISSUE_TEMPLATE/takedown.md`、`README.md`
 
 **Interfaces:**
-- Consumes: `pnpm fetch`（exit 1 = stale）、`pnpm test`。
+- Consumes: `pnpm sync`（exit 1 = stale）、`pnpm test`。
 
 - [ ] **Step 1: 抓取 workflow**
 
@@ -2071,9 +2071,9 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version-file: .nvmrc, cache: pnpm }
       - run: pnpm install --frozen-lockfile
-      - name: fetch
-        id: fetch
-        run: pnpm fetch
+      - name: sync
+        id: sync
+        run: pnpm sync
         continue-on-error: true
       - name: commit
         run: |
@@ -2086,7 +2086,7 @@ jobs:
           git commit -m "data: $(date -u +%F) +${ADD:-0} -${DEL:-0}"
           git push
       - name: fail if stale
-        if: steps.fetch.outcome == 'failure'
+        if: steps.sync.outcome == 'failure'
         run: |
           echo "::error::某來源同步失敗，已沿用上一版資料，請看 fetch 步驟 log"
           exit 1
@@ -2141,7 +2141,7 @@ labels: takedown
 
 刑事局「重要緊急查緝專案」與調查局「外逃通緝犯」的每日彙整靜態站。
 
-- 抓取：`pnpm fetch`（每日 GitHub Actions 自動跑，commit 到 `data/` 與 `public/photos/`）
+- 抓取：`pnpm sync`（每日 GitHub Actions 自動跑，commit 到 `data/` 與 `public/photos/`）
 - 網站：`pnpm dev` / `pnpm build`，Astro 靜態輸出，部署 Cloudflare Pages
 - 測試：`pnpm test`（不碰網路；build 測試會真的 build 一次）
 

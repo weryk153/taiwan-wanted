@@ -1,0 +1,38 @@
+name: fetch
+on:
+  schedule:
+    - cron: "0 22 * * *"   # 台灣 06:00
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 10 }
+      - uses: actions/setup-node@v4
+        with: { node-version-file: .nvmrc, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - name: sync
+        id: sync
+        run: pnpm sync
+        continue-on-error: true
+      - name: commit
+        run: |
+          git config user.name "taiwan-wanted bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add data public/photos
+          if git diff --cached --quiet; then echo "no changes"; exit 0; fi
+          ADD=$(git diff --cached --numstat data/wanted.json | awk '{print $1}')
+          DEL=$(git diff --cached --numstat data/wanted.json | awk '{print $2}')
+          git commit -m "data: $(date -u +%F) +${ADD:-0} -${DEL:-0}"
+          git push
+      - name: fail if stale
+        if: steps.sync.outcome == 'failure'
+        run: |
+          echo "::error::某來源同步失敗，已沿用上一版資料，請看 sync 步驟 log"
+          exit 1

@@ -86,7 +86,7 @@ interface Meta {
 
 ## 抓取流程
 
-`pnpm fetch` 執行 `scripts/fetch.ts`：
+`pnpm sync` 執行 `scripts/fetch.ts`（不叫 `fetch`，那是 pnpm 內建指令）：
 
 1. **刑事局** (`scripts/sources/cib.ts`)
    - GET 列表頁 `list?module=wanted&id=1889&page=N`，**N 從 0 起算**（page=0 是最新 16 筆，最後一頁是 pageCount-1；頁數從 `<select id="page">` 讀）。實測 104 筆剛好 7 頁。
@@ -127,7 +127,7 @@ OG 圖：build 時用 satori + resvg 產 1200×630 文字卡（姓名、罪名�
 
 ## 更新與部署
 
-- `.github/workflows/fetch.yml`：cron 每日 22:00 UTC（台灣 06:00）＋ `workflow_dispatch`。跑 `pnpm fetch`；`data/` 或 `public/photos/` 有 diff 才 commit，訊息 `data: YYYY-MM-DD +N -M`。
+- `.github/workflows/fetch.yml`：cron 每日 22:00 UTC（台灣 06:00）＋ `workflow_dispatch`。跑 `pnpm sync`；`data/` 或 `public/photos/` 有 diff 才 commit，訊息 `data: YYYY-MM-DD +N -M`。
 - Cloudflare Pages 連 repo，`pnpm build`，輸出 `dist/`。先用 `*.pages.dev`。
 - 回報下架走 GitHub Issues（公開；下架標準是官方已撤銷這個客觀事實，不需驗證回報者身分）。處理原則（寫在 about）：官方已下架 → 手動移除或等下次同步；官方仍公告 → 不刪，請對方洽通緝機關。
 
