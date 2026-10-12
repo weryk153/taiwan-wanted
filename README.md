@@ -1,25 +1,42 @@
-# taiwan-wanted
+# 台灣通緝要犯名單
 
-刑事局「重要緊急查緝專案」與調查局「外逃通緝犯」的每日彙整靜態站。
+把政府主動公告、請民眾協助查緝的通緝名單，整理成一個好看、好搜、好轉傳的網站。
 
-- 抓取：`pnpm sync`（每日 GitHub Actions 自動跑，產出 `data/` 與 `public/photos/`）
-- 分支：`master` 只有程式碼，不含資料。每日 workflow 把 master 的程式碼加上最新資料做成**單一 orphan commit** force-push 到 `site`，Cloudflare Pages 的 production branch 設 `site`。已下架的人因此不會留在可瀏覽的 git 歷史。
-- 本機開發：先 `pnpm sync` 產資料（約 10 分鐘），或 `git fetch origin site && git checkout origin/site -- data public/photos && git reset -q -- data public/photos`。
-- 網站：`pnpm dev` / `pnpm build`，Astro 靜態輸出，部署 Cloudflare Pages
-- 測試：`pnpm test`（不碰網路；build 測試會真的 build 一次）
+網站：https://taiwan-wanted.pages.dev
 
-## 揭露原則
+## 資料從哪裡來
 
-身分證字號前三碼以外遮蔽且全碼不落地；護照號碼不保留；個人頁 noindex；官方下架次日本站下架，不保留歷史。細節見 `docs/superpowers/specs/`。
+兩個官方來源，每天早上六點自動同步一次：
 
-## 回報下架
+- **刑事警察局「重要緊急查緝專案」**：警方特別加強查緝的要犯，附照片與檢舉獎金。
+- **法務部調查局「外逃通緝犯」**：貪污、經濟犯罪、毒品等重大案件，已潛逃出境者。
 
-官方已撤銷公告但本站仍顯示時，開一個 Issue（有範本），附頁面網址即可。
+兩者都是政府公開且鼓勵轉載的資料。本站不是官方網站，所有內容以通緝機關最新公告為準。
 
-## 部署
+本站**不**收錄警政署「查捕逃犯」與高檢署「通緝要犯」查詢系統的資料。那兩套是讓你輸入姓名和身分證字號核對某個人用的，不是公開名單，想查某個人請直接去官方系統。
 
-Cloudflare Pages 連本 repo：**production branch `site`**，build command `pnpm build`，output `dist`，Node 版本由 `.nvmrc` 決定。
+## 我們怎麼保護當事人
 
-## 字型
+- 身分證字號只顯示前三碼，完整號碼不儲存。
+- 護照號碼不保留。
+- 個人頁不讓搜尋引擎收錄；照片與預覽圖也不讓圖片搜尋收錄。
+- 轉貼預覽卡不用當事人照片。
+- 官方撤銷公告後，本站次日自動下架，不保留歷史，也不標示「已到案」。
+- 每日更新的資料與照片不累積在版本紀錄裡，已下架的人不會留在任何可瀏覽的地方。
 
-`fonts/NotoSansTC-Regular.otf` 用於 OG 圖，SIL Open Font License 1.1，見 `fonts/LICENSE-OFL.txt`。
+## 有線索怎麼辦
+
+直接聯絡各頁面上的通緝機關或檢舉電話。本站不收線索、不設留言。
+
+## 官方已經撤銷，但本站還顯示
+
+請[開一個回報](https://github.com/weryk153/taiwan-wanted/issues/new?template=takedown.md)，附上本站頁面網址就好，不需要說明你是誰。確認官方已撤銷後會立即移除。官方仍在公告的，本站不會移除，請洽通緝機關。
+
+## 開放資料
+
+- `https://taiwan-wanted.pages.dev/data.json`：全部名單，每日更新。
+- `https://taiwan-wanted.pages.dev/feed.xml`：RSS，新公告就會推。
+
+## 給想自己跑的人
+
+程式碼全部公開，抓取、遮蔽、下架的邏輯都在 `scripts/` 裡，歡迎檢視。開發說明見 [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md)。
