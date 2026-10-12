@@ -1,0 +1,32 @@
+{
+  "name": "taiwan-wanted",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fetch": "tsx scripts/fetch.ts",
+    "test": "vitest run",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@astrojs/svelte": "^9.0.1",
+    "@resvg/resvg-js": "^2.6.2",
+    "astro": "^7.3.8",
+    "cheerio": "^1.2.0",
+    "he": "^2.0.0",
+    "satori": "^0.48.1",
+    "sharp": "^0.35.5",
+    "svelte": "^5.57.2"
+  },
+  "devDependencies": {
+    "@types/he": "^1.2.3",
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}
