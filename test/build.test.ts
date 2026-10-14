@@ -3,6 +3,10 @@ import { execSync } from "node:child_process";
 import { readFileSync, existsSync } from "node:fs";
 import { slugify } from "../src/lib/slug";
 import { recentlyAdded } from "../src/lib/recent";
+import { referenceReview, reviewedReferences } from "../src/lib/references";
+import { rankRewards } from "../src/lib/rewards";
+import * as cheerio from "cheerio";
+import type { WantedRecord } from "../src/lib/types";
 
 const ROOT = new URL("..", import.meta.url).pathname;
 const read = (p: string) => readFileSync(`${ROOT}/dist/${p}`, "utf8");
@@ -53,8 +57,41 @@ describe.skipIf(!HAS_DATA)("build", () => {
   it("每筆都有個人頁", () => {
     for (const r of records) expect(existsSync(`${ROOT}/dist/p/${r.id}/index.html`)).toBe(true);
   });
+  it("個人頁呈現已核對來源及空狀態，公開資料也保留有效連結", () => {
+    const exported = JSON.parse(read("data.json")) as WantedRecord[];
+    for (const r of records) {
+      const $ = cheerio.load(read(`p/${r.id}/index.html`));
+      const refs = reviewedReferences(r);
+      expect($(".references li")).toHaveLength(refs.length);
+      if (!refs.length) expect($(".references").text()).toMatch(/尚未(?:收錄|找到)可確認對應本案/);
+      for (const item of refs) {
+        expect($(".references a").toArray().some((a) => $(a).attr("href") === item.url)).toBe(true);
+        expect($(".references").text()).toContain(item.matchedOn);
+      }
+      expect(exported.find((x) => x.id === r.id)?.references?.items ?? []).toEqual(refs);
+      const review = referenceReview(r);
+      if (review) {
+        expect($(".references .review").text()).toContain(review.checkedAt);
+        expect($(".references .review").text()).toContain(review.note);
+        expect(exported.find((x) => x.id === r.id)?.references?.review).toEqual(review);
+      }
+    }
+  });
   it("data.json 筆數一致", () => {
     expect(JSON.parse(read("data.json"))).toHaveLength(records.length);
+  });
+  it("獎金排行保留官方金額、上限與原文連結，首頁有入口", () => {
+    const $ = cheerio.load(read("rewards/index.html"));
+    const ranked = rankRewards(records);
+    expect($(".reward-list > li")).toHaveLength(ranked.length);
+    expect($('meta[name="robots"]').attr("content")).toBe("noindex, nofollow");
+    ranked.forEach(({ record, reward }, index) => {
+      const row = $(".reward-list > li").eq(index);
+      expect(row.find(".amount").text()).toContain(new Intl.NumberFormat("zh-TW").format(reward.amount));
+      if (reward.maximum) expect(row.text()).toContain("最高檢舉獎金");
+      expect(row.find(".conditions a").first().attr("href")).toBe(record.sourceUrl);
+    });
+    expect(read("index.html")).toContain('href="/rewards/"');
   });
   it("404 不含任何姓名", () => {
     const html = read("404.html");
@@ -105,5 +142,6 @@ describe.skipIf(!HAS_DATA)("build", () => {
   });
   it("about 有回報下架的 GitHub Issues 連結", () => {
     expect(read("about/index.html")).toContain("github.com/weryk153/taiwan-wanted/issues");
+    expect(read("about/index.html")).toContain("筆完成本輪查找但尚無可確認來源");
   });
 });

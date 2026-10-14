@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "sync": "tsx scripts/fetch.ts",
+    "references": "tsx scripts/references.ts",
     "test": "vitest run",
     "dev": "astro dev",
     "build": "astro build",

@@ -5,6 +5,31 @@ export type Category = (typeof CATEGORIES)[number];
 
 export type Source = "cib" | "mjib";
 
+export interface CaseReference {
+  kind: "judgment" | "official" | "news";
+  title: string;
+  url: string;
+  publisher: string;
+  publishedAt: string;
+  checkedAt: string;
+  caseNumber?: string;
+  context: string;       // 審級、報導時點及後續進度；不可把他人判決當成本人判決
+  matchedOn: string;     // 除姓名外，與官方公告相符的案情
+}
+
+export interface ReviewedReferences {
+  caseKey: string;       // 核對時官方公告的指紋；案情改變後須重新核對
+  items: CaseReference[];
+  review?: ReferenceReview;
+}
+
+export interface ReferenceReview {
+  checkedAt: string;
+  status: "verified" | "no_match" | "unavailable";
+  note: string;
+  queries: string[];     // 實際執行過的搜尋，供後續補查與稽核
+}
+
 export interface WantedRecord {
   id: string;            // "cib-<serno>" | "mjib-<uid>"
   source: Source;
@@ -29,6 +54,7 @@ export interface WantedRecord {
   publishedAt?: string;  // ISO date
   updatedAt: string;     // ISO date
   fetchedAt: string;     // ISO datetime
+  references?: ReviewedReferences;
 }
 
 export interface SourceMeta {

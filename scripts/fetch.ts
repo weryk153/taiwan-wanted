@@ -9,6 +9,7 @@ import { guardSource } from "./guard";
 import { savePhoto } from "./photos";
 import { readPrev, writeData, pruneOrphanPhotos } from "./io";
 import type { Meta, Source, WantedRecord } from "../src/lib/types";
+import { carryReferences } from "../src/lib/references";
 
 const ROOT = fileURLToPath(new URL("..", import.meta.url));
 const DATA_DIR = join(ROOT, "data");
@@ -70,7 +71,7 @@ async function run() {
     return { records: r.records.map((x) => normalizeMjib(x, fetchedAt)), skipped: r.skipped };
   });
 
-  const all = [...cib, ...mjib];
+  const all = carryReferences([...cib, ...mjib], prev);
   await writeData(DATA_DIR, all, meta);
   const removed = await pruneOrphanPhotos(PHOTO_DIR, new Set(all.map((r) => r.id)));
   if (removed.length) log(`pruned photos: ${removed.join(", ")}`);
