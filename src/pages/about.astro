@@ -1,0 +1,56 @@
+---
+import Base from "../layouts/Base.astro";
+import { loadData } from "../lib/data";
+import { referenceReview, reviewedReferences } from "../lib/references";
+const { meta, records } = loadData();
+const withReferences = records.filter((r) => reviewedReferences(r).length > 0).length;
+const reviewedWithoutReferences = records.filter((r) => referenceReview(r) && !reviewedReferences(r).length).length;
+const ISSUES = "https://github.com/weryk153/taiwan-wanted/issues/new?template=takedown.md";
+const REPO = "https://github.com/weryk153/taiwan-wanted";
+---
+<Base title="關於與資料來源">
+  <div class="prose">
+  <div class="document-caption">ABOUT THE BULLETIN · 關於本站</div>
+  <h1>關於與資料來源</h1>
+  <h2>這是什麼</h2>
+  <p>把兩份政府主動公告、附照片、請求民眾協助查緝的通緝名單彙整成一頁，方便瀏覽、搜尋與轉傳。本站非官方。</p>
+
+  <h2>資料來源</h2>
+  <ul>
+    <li><a href="https://www.cib.npa.gov.tw/ch/app/wanted/list?module=wanted&id=1889" rel="noopener" target="_blank">內政部警政署刑事警察局「重要緊急查緝專案」</a>（官方提供開放資料 JSON）</li>
+    <li><a href="https://www.mjib.gov.tw/Crimes/Crimes_List" rel="noopener" target="_blank">法務部調查局「外逃通緝犯查詢系統」</a>（依該站資料開放宣告，採政府資料開放授權條款第 1 版）</li>
+  </ul>
+  <p>不納入警政署與高檢署的兩套查詢系統，它們設計為逐人核對，不是公開名單。</p>
+
+  <h2 id="case-references">案件資料與延伸閱讀</h2>
+  <p>個人頁可附上公開裁判書、官方案件說明與新聞報導，並標明來源、發布日期、核對日期及核對依據。逐筆對照官方公告中的案件、時間、機關或涉案公司等資訊，不僅憑同名連結資料；無法確認時不收錄。</p>
+  <p>這些資料不代表完整刑事紀錄，也不能把通緝、起訴或新聞敘述視為有罪確定。裁判書標示案號及審級／程序說明，官方新聞稿另列為官方案件說明；早期報導須搭配後續裁判閱讀。尚未收錄不表示沒有相關案件。</p>
+  <p>目前 {records.length} 筆公告中，{withReferences} 筆已收錄核對來源，{reviewedWithoutReferences} 筆完成本輪查找但尚無可確認來源，{records.length - withReferences - reviewedWithoutReferences} 筆待查核。以公告逐筆計算，同名或跨機關公告不自動視為同一人。</p>
+  <p>每頁另標示查核日期與結果。「暫無可確認來源」表示本輪未找到足以核對身分及案件的資料；「查核受限」表示候選原文無法讀取。兩者均不表示沒有刑事紀錄或沒有相關報導。</p>
+  <p>連結隨通緝公告下架；公告身分或案情變動後，原有連結須重新核對才會顯示。每日同步只更新官方通緝公告，延伸資料的核對日期獨立標示。</p>
+
+  <h2>想查某個人是不是通緝犯</h2>
+  <p>請直接用官方系統，本站不提供這項功能：</p>
+  <ul>
+    <li><a href="https://eze8.npa.gov.tw/NpaE8ServerRWD/CE_Query.jsp" rel="noopener" target="_blank">警政署「查捕逃犯網路公告查詢」</a>：輸入姓名與身分證字號，涵蓋所有一般刑案通緝。</li>
+    <li><a href="https://www.thcw.moj.gov.tw/CriminalWanted/" rel="noopener" target="_blank">高檢署「通緝要犯資料查詢系統」</a>：姓名或統一編號擇一，檢察機關的偵查中、執行中與脫逃案件，符合條件者附照片。</li>
+  </ul>
+
+  <h2>更新與下架</h2>
+  <p>每日台灣時間 06:00 自動同步。最近一次：{meta.fetchedAt.slice(0, 16).replace("T", " ")} UTC。官方公告消失的筆，次日即從本站移除，不保留歷史，不標示「已到案」。</p>
+
+  <h2>揭露原則</h2>
+  <ul>
+    <li>身分證字號只顯示前三碼，其餘遮蔽；完整號碼不儲存。</li>
+    <li>護照號碼不保留。</li>
+    <li>個人頁不開放搜尋引擎索引。</li>
+    <li>轉貼預覽圖不使用當事人照片。</li>
+  </ul>
+
+  <h2>回報下架</h2>
+  <p>若官方已撤銷公告但本站仍顯示，請到 <a href={ISSUES} rel="noopener" target="_blank">GitHub 開一個 Issue</a>，附上本站頁面網址即可，不需要說明你是誰。處理原則：官方已撤銷者，手動立即移除或等次日自動同步；官方仍在公告者，本站不會移除，請洽通緝機關。</p>
+
+  <h2>程式碼</h2>
+  <p>抓取、遮蔽與下架邏輯全部公開於 <a href={REPO} rel="noopener" target="_blank">GitHub</a>，歡迎檢視。</p>
+  </div>
+</Base>

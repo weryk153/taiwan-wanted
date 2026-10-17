@@ -1,0 +1,63 @@
+---
+import type { WantedRecord } from "../lib/types";
+import { referenceReview, reviewedReferences, REFERENCE_LABELS } from "../lib/references";
+const { record } = Astro.props as { record: WantedRecord };
+const items = reviewedReferences(record);
+const review = referenceReview(record);
+const statusLabel = items.length ? `${items.length} 筆已核對來源`
+  : review?.status === "unavailable" ? "查核受限"
+  : review ? "已查核 · 暫無可確認來源" : "尚未收錄";
+---
+<section class="references" aria-labelledby="references-title">
+  <div class="heading">
+    <h2 id="references-title">案件資料與延伸閱讀</h2>
+    <span>{statusLabel}</span>
+  </div>
+  <p class="intro">官方公告中的罪名與案情見上方。本區收錄已對照公告核對身分及案件的公開資料，不代表完整刑事紀錄。通緝、起訴與判決確定是不同程序狀態。</p>
+  {items.length ? (
+    <ul>
+      {items.map((item) => (
+        <li>
+          <div class="meta"><span class="kind">{REFERENCE_LABELS[item.kind]}</span><span>{item.publisher}</span><time datetime={item.publishedAt}>{item.publishedAt}</time></div>
+          <h3><a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}<span class="external" aria-label="（另開分頁）"> ↗</span></a></h3>
+          {item.caseNumber && <p class="case-number">裁判字號：{item.caseNumber}</p>}
+          <p>{item.context}</p>
+          <details>
+            <summary>核對依據 · {item.checkedAt}</summary>
+            <p>{item.matchedOn}</p>
+            <a href={record.sourceUrl} target="_blank" rel="noopener noreferrer">對照本筆官方通緝公告 ↗</a>
+          </details>
+        </li>
+      ))}
+    </ul>
+  ) : <p class="empty">{review ? "本次查核尚未找到可確認對應本案的裁判書或新聞。" : "尚未收錄可確認對應本案的裁判書或新聞。"}這不表示沒有相關案件或報導。</p>}
+  {review && <div class="review"><p><strong>本次查核：<time datetime={review.checkedAt}>{review.checkedAt}</time></strong></p><p>{review.note}</p></div>}
+  <p class="note">裁判與新聞反映各自發布時的資訊；請留意審級及後續裁判。新聞報導不能取代判決認定。<a href="/about/#case-references">收錄原則</a></p>
+</section>
+<style>
+  .references { margin: 0 0 48px; padding: 28px 32px; background: var(--paper); border: 1px solid var(--ink); border-top: 4px double var(--ink); }
+  .heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h2 { margin: 0; font: 900 24px/1.5 var(--serif); }
+  .heading > span, .intro, .note, .meta, details { color: var(--ink-2); font-size: 13px; }
+  .intro { margin: 12px 0 24px; max-width: 72em; }
+  ul { list-style: none; margin: 0; padding: 0; }
+  li { padding: 24px 0; border-top: 1px solid var(--rule); overflow-wrap: anywhere; }
+  .meta { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+  .kind { border: 1px solid var(--red); color: var(--red); padding: 2px 8px; font-size: 11px; }
+  h3 { margin: 12px 0 8px; font: 700 19px/1.6 var(--serif); }
+  h3 a { text-decoration-thickness: 1px; text-underline-offset: 4px; }
+  a:hover { color: var(--red); }
+  .external { font-family: var(--sans); color: var(--red); }
+  li > p { margin: 8px 0; font-size: 14px; }
+  .case-number { color: var(--ink-2); }
+  details { margin-top: 14px; }
+  summary { cursor: pointer; width: fit-content; }
+  details p { margin-bottom: 8px; }
+  .note { border-top: 1px solid var(--rule); padding-top: 16px; margin-bottom: 0; }
+  .empty { padding: 20px; background: var(--paper-2); font-size: 14px; }
+  .review { margin-top: 16px; padding: 14px 18px; border-left: 3px solid var(--rule); background: var(--paper-2); font-size: 13px; }
+  .review p { margin: 0; }
+  .review p + p { margin-top: 6px; }
+  @media (max-width: 600px) { .references { padding: 22px; } h2 { font-size: 21px; } }
+  @media print { .references { display: none; } }
+</style>
