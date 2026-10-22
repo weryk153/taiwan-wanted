@@ -5,6 +5,7 @@ import { slugify } from "../src/lib/slug";
 import { recentlyAdded } from "../src/lib/recent";
 import { referenceReview, reviewedReferences } from "../src/lib/references";
 import { rankRewards } from "../src/lib/rewards";
+import { judgmentTimelines, STAGE_LABELS } from "../src/lib/judgments";
 import * as cheerio from "cheerio";
 import type { WantedRecord } from "../src/lib/types";
 
@@ -62,7 +63,7 @@ describe.skipIf(!HAS_DATA)("build", () => {
     for (const r of records) {
       const $ = cheerio.load(read(`p/${r.id}/index.html`));
       const refs = reviewedReferences(r);
-      expect($(".references li")).toHaveLength(refs.length);
+      expect($(".references .source-list > li")).toHaveLength(refs.length);
       if (!refs.length) expect($(".references").text()).toMatch(/尚未(?:收錄|找到)可確認對應本案/);
       for (const item of refs) {
         expect($(".references a").toArray().some((a) => $(a).attr("href") === item.url)).toBe(true);
@@ -75,6 +76,28 @@ describe.skipIf(!HAS_DATA)("build", () => {
         expect($(".references .review").text()).toContain(review.note);
         expect(exported.find((x) => x.id === r.id)?.references?.review).toEqual(review);
       }
+    }
+  });
+  it("裁判卡片區分文書與關聯範圍，只有核對過的前後審才顯示時間線", () => {
+    for (const r of records as WantedRecord[]) {
+      const $ = cheerio.load(read(`p/${r.id}/index.html`));
+      const items = reviewedReferences(r);
+      const judgments = items.filter(x => x.kind === "judgment");
+      expect($(".judgment-card")).toHaveLength(judgments.length);
+      judgments.forEach((item, i) => {
+        if (!item.judgment) return;
+        const card = $(".judgment-card").eq(i).text();
+        expect(card).toContain(item.judgment.court);
+        expect(card).toContain(item.judgment.documentType);
+        expect(card).toContain(item.judgment.fetchedAt);
+        if (item.procedure) expect(card).toContain(STAGE_LABELS[item.procedure.stage]);
+      });
+      const groups = judgmentTimelines(items);
+      expect($(".timeline")).toHaveLength(groups.length);
+      groups.forEach((group, i) => {
+        const line = $(".timeline").eq(i);
+        expect(line.find("time").toArray().map(el => $(el).attr("datetime"))).toEqual(group.items.map(x => x.publishedAt));
+      });
     }
   });
   it("data.json 筆數一致", () => {

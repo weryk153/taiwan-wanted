@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import type { CaseReference, ReferenceReview, ReviewedReferences, WantedRecord } from "./types";
+import { validJudgment, validProcedure, validPendingJudgment } from "./judgments";
 
 export const REFERENCE_LABELS = {
   judgment: "司法裁判", official: "官方案件說明", news: "新聞報導",
@@ -25,7 +26,9 @@ export function validReference(value: unknown): value is CaseReference {
     || ![r.title, r.publisher, r.context, r.matchedOn, r.url].every(text)
     || !date(r.publishedAt) || !date(r.checkedAt) || r.publishedAt > r.checkedAt
     || (r.caseNumber !== undefined && !text(r.caseNumber))
-    || (r.kind === "judgment" && !text(r.caseNumber))) return false;
+    || (r.kind === "judgment" && !text(r.caseNumber))
+    || (r.judgment !== undefined && !validJudgment(r.judgment, r))
+    || (r.procedure !== undefined && !validProcedure(r.procedure, r))) return false;
   try {
     const u = new URL(r.url);
     if (u.protocol !== "https:" || u.username || u.password) return false;
@@ -64,6 +67,13 @@ export function referenceReview(r: WantedRecord, value: unknown = r.references):
   return refs.review;
 }
 
+export function pendingJudgments(r: WantedRecord, value: unknown = r.references) {
+  if (!value || typeof value !== "object") return [];
+  const refs = value as ReviewedReferences;
+  if (refs.caseKey !== caseKey(r) || !Array.isArray(refs.pendingJudgments)) return [];
+  return refs.pendingJudgments.filter(validPendingJudgment);
+}
+
 /** 只延續仍存在且案情一致的公告；已下架與改寫的公告不保留關聯資料。 */
 export function carryReferences(next: WantedRecord[], prev: WantedRecord[]): WantedRecord[] {
   const byId = new Map(prev.map((r) => [r.id, r]));
@@ -71,6 +81,7 @@ export function carryReferences(next: WantedRecord[], prev: WantedRecord[]): Wan
     const { references: _discard, ...r } = record;
     const items = reviewedReferences(r, byId.get(r.id)?.references);
     const review = referenceReview(r, byId.get(r.id)?.references);
-    return items.length || review ? { ...r, references: { caseKey: caseKey(r), items, ...(review ? { review } : {}) } } : r;
+    const pending = pendingJudgments(r, byId.get(r.id)?.references);
+    return items.length || review || pending.length ? { ...r, references: { caseKey: caseKey(r), items, ...(review ? { review } : {}), ...(pending.length ? { pendingJudgments: pending } : {}) } } : r;
   });
 }

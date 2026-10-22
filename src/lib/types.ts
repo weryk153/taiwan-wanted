@@ -15,12 +15,38 @@ export interface CaseReference {
   caseNumber?: string;
   context: string;       // 審級、報導時點及後續進度；不可把他人判決當成本人判決
   matchedOn: string;     // 除姓名外，與官方公告相符的案情
+  judgment?: JudgmentMetadata;
+  procedure?: JudgmentProcedure; // 人工確認的案件關聯，不能按姓名或日期自動推測
+}
+
+export interface JudgmentMetadata {
+  jid: string;
+  court: string;
+  documentType: string;
+  caseNumber: string;
+  date: string;
+  contentHash: string;
+  fetchedAt: string;
+}
+
+export interface JudgmentProcedure {
+  stage: "first" | "appeal" | "supreme" | "retrial" | "other";
+  scope: "person" | "related";
+  group?: { id: string; label: string }; // 僅在同一公告內分組
+  priorJid?: string; // 已核對的前審，並非僅依時間先後
+}
+
+export interface PendingJudgment {
+  jid: string;
+  reason: "changed" | "removed";
+  detectedAt: string;
 }
 
 export interface ReviewedReferences {
   caseKey: string;       // 核對時官方公告的指紋；案情改變後須重新核對
   items: CaseReference[];
   review?: ReferenceReview;
+  pendingJudgments?: PendingJudgment[];
 }
 
 export interface ReferenceReview {

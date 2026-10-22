@@ -44,6 +44,11 @@ jobs:
           test -s data/wanted.json
           if grep -qE '"[A-Z][12][0-9]{8}"' data/wanted.json; then echo "full ID found"; exit 1; fi
 
+      - name: Refresh reviewed judgment sources
+        id: judgments
+        run: pnpm judgments:sync
+        continue-on-error: true
+
       - name: Publish single-commit site branch
         run: |
           git config user.name "taiwan-wanted bot"
@@ -57,7 +62,7 @@ jobs:
           git push --force origin site-next:site
 
       - name: Fail if a source was stale
-        if: steps.sync.outcome == 'failure'
+        if: steps.sync.outcome == 'failure' || steps.judgments.outcome == 'failure'
         run: |
-          echo "::error::sync exited non-zero (a source is stale or crashed); site was updated with the usable data. See the Sync step log."
+          echo "::error::A wanted or judgment source could not refresh; site was updated with usable data. See sync logs."
           exit 1

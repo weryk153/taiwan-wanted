@@ -3,6 +3,7 @@ import { writeFile, rename } from "node:fs/promises";
 import { resolve } from "node:path";
 import { caseKey, validReference, validReview } from "../src/lib/references";
 import type { WantedRecord, ReviewedReferences } from "../src/lib/types";
+import { validPendingJudgment } from "../src/lib/judgments";
 
 // 僅匯入已逐筆核對的連結，不做網路搜尋或姓名推測。
 const input = process.argv[2];
@@ -21,8 +22,9 @@ for (const entry of batch) {
     || new Set(entry.items.map((x) => x.url)).size !== entry.items.length) throw new Error(`連結欄位不完整、網址不合規或重複：${r.id}`);
   if (entry.review !== undefined && (!validReview(entry.review)
     || (entry.review.status === "verified") !== (entry.items.length > 0))) throw new Error(`查核結果與連結不一致：${r.id}`);
+  if (entry.pendingJudgments !== undefined && (!Array.isArray(entry.pendingJudgments) || !entry.pendingJudgments.every(validPendingJudgment))) throw new Error(`無效的待複核裁判：${r.id}`);
   seen.add(r.id);
-  if (entry.items.length || entry.review) r.references = { caseKey: entry.caseKey, items: entry.items, ...(entry.review ? { review: entry.review } : {}) };
+  if (entry.items.length || entry.review || entry.pendingJudgments?.length) r.references = { caseKey: entry.caseKey, items: entry.items, ...(entry.review ? { review: entry.review } : {}), ...(entry.pendingJudgments?.length ? { pendingJudgments: entry.pendingJudgments } : {}) };
   else delete r.references;
 }
 // 全批驗證成功才取代原檔。
