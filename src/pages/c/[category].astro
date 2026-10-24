@@ -1,0 +1,21 @@
+---
+import Base from "../../layouts/Base.astro";
+import PosterGrid from "../../components/PosterGrid.svelte";
+import { loadData } from "../../lib/data";
+import { CATEGORIES, type WantedRecord } from "../../lib/types";
+
+export function getStaticPaths() {
+  const { records } = loadData();
+  return CATEGORIES.map((category) => ({ params: { category }, props: { category, list: records.filter((r) => r.category === category) } }))
+    .filter((p) => p.props.list.length > 0);
+}
+const { category, list } = Astro.props as { category: string; list: WantedRecord[] };
+---
+<Base title={category} description={`${category}類目前公告的 ${list.length} 名通緝要犯`}>
+  <a class="back" href="/c/">所有類別</a>
+  <section class="hero">
+    <h2 class="big" style="font-size:clamp(40px,7vw,72px)">{category}</h2>
+    <p class="lede">目前公告 <strong>{list.length}</strong> 人。</p>
+  </section>
+  <PosterGrid records={list} />
+</Base>
