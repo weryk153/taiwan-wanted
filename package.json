@@ -1,0 +1,40 @@
+{
+  "name": "taiwan-wanted",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "sync": "tsx scripts/fetch.ts",
+    "references": "tsx scripts/references.ts",
+    "judgments:sync": "tsx scripts/judgments-sync.ts",
+    "judicial:measure": "tsx scripts/judicial-feed.ts --measure",
+    "judicial:feed": "tsx scripts/judicial-feed.ts",
+    "test": "vitest run",
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.7.4",
+    "@astrojs/svelte": "^9.0.1",
+    "@resvg/resvg-js": "^2.6.2",
+    "astro": "^7.3.8",
+    "bmp-js": "^0.1.0",
+    "cheerio": "^1.2.0",
+    "he": "^2.0.0",
+    "satori": "^0.48.1",
+    "sharp": "^0.35.5",
+    "svelte": "^5.57.2"
+  },
+  "devDependencies": {
+    "@types/bmp-js": "^0.1.2",
+    "@types/he": "^1.2.3",
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  },
+  "packageManager": "pnpm@10.16.1"
+}

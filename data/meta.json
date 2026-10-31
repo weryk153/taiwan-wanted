@@ -1,0 +1,15 @@
+{
+  "fetchedAt": "2026-10-31T01:27:53.212Z",
+  "sources": {
+    "cib": {
+      "count": 102,
+      "stale": false,
+      "errors": 0
+    },
+    "mjib": {
+      "count": 316,
+      "stale": false,
+      "errors": 1
+    }
+  }
+}

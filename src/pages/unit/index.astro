@@ -1,0 +1,26 @@
+---
+import Base from "../../layouts/Base.astro";
+import { loadData } from "../../lib/data";
+import { slugify } from "../../lib/slug";
+const { records } = loadData();
+const counts = new Map<string, number>();
+for (const r of records) if (r.wantedUnit) counts.set(r.wantedUnit, (counts.get(r.wantedUnit) ?? 0) + 1);
+const units = [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "zh-Hant"));
+---
+<Base title="依通緝機關" description="各通緝機關目前公告的要犯人數與名單">
+  <a class="back" href="/">回名單</a>
+  <div class="prose">
+    <h2>依通緝機關</h2>
+    <ul class="units">
+      {units.map(([u, n]) => <li><a href={`/unit/${slugify(u)}/`}>{u}</a><span>{n} 人</span></li>)}
+    </ul>
+  </div>
+</Base>
+<style>
+  .units { list-style: none; padding: 0; margin: 0; columns: 2; column-gap: 28px; }
+  .units li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--ink); break-inside: avoid; }
+  .units a { color: var(--ink); text-decoration: none; }
+  .units a:hover { color: var(--red); }
+  .units span { color: var(--ink-2); white-space: nowrap; }
+  @media (max-width: 560px) { .units { columns: 1; } }
+</style>

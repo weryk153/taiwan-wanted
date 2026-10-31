@@ -1,0 +1,69 @@
+---
+import Base from "../../layouts/Base.astro";
+import { loadData, SOURCE_LABEL } from "../../lib/data";
+import type { WantedRecord } from "../../lib/types";
+import CaseReferences from "../../components/CaseReferences.astro";
+
+export function getStaticPaths() {
+  return loadData().records.map((r) => ({ params: { id: r.id }, props: { r } }));
+}
+const { r } = Astro.props as { r: WantedRecord };
+
+const rows: [string, string | undefined][] = [
+  ["性別", r.gender === "male" ? "男" : r.gender === "female" ? "女" : undefined],
+  ["出生", r.birthDate ?? (r.birthYear ? `${r.birthYear} 年` : undefined)],
+  ["身分證字號", r.idMasked],
+  ["通緝機關", r.wantedUnit],
+  ["通緝罪名", r.accusation],
+  ["查緝原因", r.reason],
+  ["涉嫌事實", r.facts],
+  ["可能藏匿處所", r.hidePosition],
+  ["可能潛逃地點", r.fledTo],
+  ["可能潛逃時間", r.fledAt],
+  ["通緝／公告日期", r.publishedAt],
+  ["官方更新日期", r.updatedAt],
+];
+const desc = `${r.accusation || "通緝"}｜${r.wantedUnit}｜${SOURCE_LABEL[r.source]}公告`;
+const reward = r.reward ?? (r.reportTel ? `檢舉電話：\n${r.reportTel}` : undefined);
+---
+<Base title={r.name} description={desc} noindex ogImage={`/og/${r.id}.png`}>
+  <div class="actions">
+    <a class="back" href="/">← 回通緝公告欄</a>
+    <button class="print" type="button" onclick="window.print()">列印海報</button>
+  </div>
+  <article class="sheet">
+    <div class="sheet-masthead"><strong aria-hidden="true">WANTED</strong><span>公開通緝公告 · PUBLIC NOTICE</span></div>
+    <div class="pic">
+      {r.photo ? <img src={`/${r.photo}`} alt={`${r.name} 照片`} width="300" height="375" /> : <span>官方未提供照片</span>}
+    </div>
+    <div>
+      <p class="title">通緝</p>
+      <p class="sub">{SOURCE_LABEL[r.source]}公告。{r.category}。</p>
+      <h1 class="name">{r.name}</h1>
+      {r.nameEn && <p class="name-en">{r.nameEn}</p>}
+      <dl class="rows">
+        {rows.filter(([, v]) => v).map(([k, v]) => (
+          <><dt>{k}</dt><dd>{v}</dd></>
+        ))}
+      </dl>
+    </div>
+    {reward && (
+      <div class="reward">
+        <div class="label">檢舉獎金與聯絡方式</div>
+        {reward}
+      </div>
+    )}
+    <div class="foot">
+      <span>資料擷取日 {r.fetchedAt.slice(0, 10)}。官方撤銷公告後，本頁次日自動下架。</span>
+      <a href={r.sourceUrl} rel="noopener" target="_blank">{SOURCE_LABEL[r.source]}官方原始頁</a>
+    </div>
+  </article>
+  <CaseReferences record={r} />
+</Base>
+<style>
+  .actions { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+  .actions .back { margin-top: 0; }
+  .print { font: 500 0.95rem/1 var(--sans); background: var(--ink); color: #fff; border: 2px solid var(--ink); padding: 10px 14px; cursor: pointer; }
+  .print:hover { background: var(--red); border-color: var(--red); }
+  .print:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+</style>
