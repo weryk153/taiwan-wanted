@@ -1,0 +1,45 @@
+---
+import "../styles/global.css";
+interface Props { title: string; description?: string; noindex?: boolean; ogImage?: string }
+const { title, description = "刑事局重要緊急查緝專案與調查局外逃通緝犯的每日彙整", noindex = false, ogImage } = Astro.props;
+const SITE_NAME = "台灣通緝要犯名單";
+const url = new URL(Astro.url.pathname, Astro.site);
+---
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{title} | {SITE_NAME}</title>
+  <meta name="description" content={description} />
+  {noindex && <meta name="robots" content="noindex, nofollow" />}
+  <meta property="og:title" content={title} />
+  <meta property="og:description" content={description} />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content={url} />
+  <link rel="canonical" href={url} />
+  <link rel="alternate" type="application/rss+xml" title="台灣通緝要犯名單" href={new URL("/feed.xml", Astro.site)} />
+  <meta property="og:site_name" content={SITE_NAME} />
+  {ogImage && <meta property="og:image" content={new URL(ogImage, Astro.site)} />}
+  <meta name="twitter:card" content="summary_large_image" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Noto+Serif+TC:wght@700;900&display=swap" />
+</head>
+<body>
+  <a class="skip-link" href="#main">跳至主要內容</a>
+  <header class="site"><div class="wrap">
+    <a class="brand" href="/" aria-label={SITE_NAME}>
+      <span class="brand-mark" aria-hidden="true">緝</span>
+      <span><span class="brand-name">台灣通緝要犯名單</span><span class="brand-caption">TAIWAN WANTED BULLETIN</span></span>
+    </a>
+    <nav aria-label="主要導覽"><a href="/" aria-current={Astro.url.pathname === "/" ? "page" : undefined}>通緝公告</a><a href="/unit/" aria-current={Astro.url.pathname.startsWith("/unit/") ? "page" : undefined}>依機關</a><a href="/c/" aria-current={Astro.url.pathname.startsWith("/c/") ? "page" : undefined}>依類別</a><a href="/about" aria-current={Astro.url.pathname.startsWith("/about") ? "page" : undefined}>關於與資料來源</a><a class="data-link" href="/feed.xml">RSS</a><a class="data-link" href="/data.json">開放資料 <span aria-hidden="true">↗</span></a></nav>
+  </div></header>
+  <main id="main" class="wrap"><slot /></main>
+  <footer class="site"><div class="wrap">
+    <div class="footer-title">台灣通緝要犯名單<span>TAIWAN WANTED BULLETIN</span></div>
+    <p>資料來自刑事警察局與法務部調查局的公開公告，每日同步。<br />本站為非官方彙整，以通緝機關最新公告為準。</p>
+    <a href="/about">資料來源與下架說明 <span aria-hidden="true">↗</span></a>
+  </div></footer>
+</body>
+</html>

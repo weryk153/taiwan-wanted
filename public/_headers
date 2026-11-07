@@ -1,0 +1,4 @@
+/photos/*
+  X-Robots-Tag: noindex
+/og/*
+  X-Robots-Tag: noindex

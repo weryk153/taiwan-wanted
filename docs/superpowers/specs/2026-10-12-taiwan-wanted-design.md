@@ -1,0 +1,181 @@
+# taiwan-wanted 設計規格
+
+日期：2026-10-12
+
+## 目標
+
+一個公開靜態網站，合併兩份政府主動公告、附照片的通緝名單，讓一般人瀏覽、搜尋、轉傳單一人的頁面。
+
+來源僅限：
+
+| 來源 | 入口 | 形式 | 約略筆數 |
+|---|---|---|---|
+| 刑事警察局「重要緊急查緝專案」 | `https://www.cib.npa.gov.tw/ch/app/wanted/list?module=wanted&id=1889` | 官方 JSON 端點（固定回 100 筆）＋ HTML 列表 | 104 |
+| 法務部調查局「外逃通緝犯查詢系統」 | `https://www.mjib.gov.tw/Crimes/Crimes_List` | HTML 列表（27 頁）＋ `Crimes_Detail?uid=N` | ~300 |
+
+不納入：警政署查捕逃犯（點查）、高檢署通緝要犯（點查）。兩者設計上不可列表，不繞過。
+
+## 使用者與成功條件
+
+- 對象：一般公眾。
+- 成功：手機打開能在 2 秒內看到名單並搜尋；每人一頁可以貼到 LINE／FB 有預覽卡；官方下架後一天內本站跟著下架。
+
+## 決策紀錄
+
+| 決策 | 選擇 | 理由 |
+|---|---|---|
+| 架構 | 靜態站 + 排程抓取 commit JSON | 資料小、變動慢、零伺服器；沿用 legislator-background 模式 |
+| 個人頁 | 有，`noindex` | 可分享，但撤緝後不殘留在搜尋結果 |
+| 出生日期 | 保留完整年月日 | 官方已公告完整日期，使用者決定沒有法律疑慮就留 |
+| 身分證字號 | 遮蔽為前三碼＋7 個 `*`，全碼不落地 | 全碼是冒用材料；調查局列表頁自己也遮 |
+| 測試 fixture | 手寫、仿真結構、假資料 | repo 公開，fixture 不能含真實姓名與證號 |
+| OG 字型 | commit `fonts/NotoSansTC-Regular.otf`（OFL） | satori 需要 TTF/OTF；build 機器無中文字型 |
+| 護照號碼 | 不保留 | 對公眾辨認無幫助 |
+| 歷史 | 不保留，不標「已到案」 | 官方消失即下架，避免散布已非通緝者的資料 |
+| OG 圖 | build 時產文字卡，不用當事人照片 | 避免轉貼預覽即大頭照 |
+| Repo | 公開 | 讓人驗證遮蔽與下架邏輯 |
+| 資料在 git 的位置 | 不進 master；每日做成單一 orphan commit force-push 到 `site` 分支 | 公開 repo 若累積資料 commit，已下架者永遠留在可瀏覽歷史，與「不保留歷史」矛盾（審查發現） |
+
+## 資料模型
+
+抓取腳本輸出 `data/wanted.json`，陣列，依 `updatedAt` 倒序。
+
+```ts
+interface WantedRecord {
+  id: string;            // "cib-<publishNo>" | "mjib-<uid>"
+  source: "cib" | "mjib";
+  name: string;
+  nameEn?: string;       // 調查局有
+  gender?: "male" | "female";
+  birthYear?: number;    // 兩個來源都有（調查局只給年）
+  birthDate?: string;    // ISO "YYYY-MM-DD"，民國年轉西元；調查局已遮月日，故只有刑事局有
+  idMasked?: string;     // "B10*******"
+  photo: string | null;  // "photos/<id>.jpg"；null 用預設圖
+  wantedUnit: string;    // 通緝機關
+  accusation: string;    // 罪名原文
+  category: Category;    // 由 accusation 歸類
+  reason?: string;       // 查緝原因（刑事局）
+  facts?: string;        // 涉嫌事實（調查局）
+  hidePosition?: string; // 可能藏匿地點（刑事局）
+  fledTo?: string;       // 可能潛逃地點（調查局）
+  fledAt?: string;       // 可能潛逃時間（調查局）
+  reportTel?: string;    // 檢舉電話／聯絡分局
+  reward?: string;       // 檢舉獎金說明原文
+  sourceUrl: string;     // 官方原始頁
+  publishedAt?: string;  // ISO date
+  updatedAt: string;     // ISO date；來源沒有就用 publishedAt，再沒有就用 fetchedAt
+  fetchedAt: string;     // ISO datetime
+}
+
+type Category = "殺人傷害" | "性侵" | "毒品" | "詐欺" | "貪污" | "洗錢" | "槍砲" | "組織犯罪" | "經濟犯罪" | "其他";
+```
+
+`data/meta.json`：
+
+```ts
+interface Meta {
+  fetchedAt: string;
+  sources: Record<"cib" | "mjib", {
+    count: number;
+    stale: boolean;      // 本次失敗，沿用舊資料
+    errors: number;      // 單筆略過數
+  }>;
+}
+```
+
+全碼身分證、護照號碼在抓取腳本記憶體內即丟棄，不寫入任何檔案，git 歷史中也不存在。所有輸出的自由文字（獎金說明、查緝原因、涉嫌事實等）再過一道正規式，`[A-Z][12]\d{8}` 一律換成遮蔽格式。測試對整份 `wanted.json` 與 `dist/data.json` 斷言找不到完整證號格式。
+
+## 抓取流程
+
+`pnpm sync` 執行 `scripts/fetch.ts`（不叫 `fetch`，那是 pnpm 內建指令）：
+
+1. **刑事局** (`scripts/sources/cib.ts`)
+   - GET 列表頁 `list?module=wanted&id=1889&page=N`，**N 從 0 起算**（page=0 是最新 16 筆，最後一頁是 pageCount-1；頁數從 `<select id="page">` 讀）。實測 104 筆剛好 7 頁。
+   - 每筆 GET 單筆 JSON `openData/wanted/data?module=wanted&serno=<serno>&type=json`（不需 cookie）。不用整批 JSON 端點，因為它固定只回 100 筆且沒有 `serno`。
+   - key：`serno`（`publishNo` 不唯一，實測 100 筆只有 87 個不同值）。
+2. **調查局** (`scripts/sources/mjib.ts`)
+   - GET `Crimes_List` 全部分頁，取所有 `Crimes_Detail?uid=N`。
+   - 逐一 GET 詳細頁。
+   - key：`uid`。
+   - 調查局詳細頁已遮出生月日（`1950/**/**`）、身分證後四碼、護照後三碼，只取年。
+   - 調查局欄位是「中文＋英文翻譯」黏在一起（罪名、機關、潛逃地點、時間、事實），正規化時砍掉最後一個中文字之後的英文段，姓名不動。
+   - 調查局約 4% 照片是 BMP 卻標 `image/jpeg`，用 bmp-js 先解碼再交給 sharp。
+   - 兩個來源請求間隔皆 500ms，不並發。
+3. **正規化** (`scripts/normalize.ts`)：兩種原始格式 → `WantedRecord`；遮蔽；民國年轉西元；罪名歸類。
+4. **照片** (`scripts/photos.ts`)：下載到 `public/photos/<id>.jpg`，sharp 縮至長邊 480px、去 EXIF、JPEG 品質 80。下載失敗 → `photo: null`，記 errors。
+5. **防線** (`scripts/guard.ts`)，每個來源獨立判斷：
+   - HTTP 失敗、解析得 0 筆、筆數比上一版少超過 30%、或單筆略過超過 5% → 該來源沿用上一版記錄與照片，`stale: true`，程序以非零碼結束（讓 workflow 失敗通知）。
+   - 列表非最後一頁解出 0 筆（200 錯誤頁、被導回列表）→ 該來源整批失敗，不默默少抓。
+   - 單筆失敗 → 略過，`errors + 1`，不影響整批（但受 5% 門檻約束）。
+   - 每個請求 30 秒 timeout；workflow job 40 分鐘上限。
+6. **寫檔**：`data/wanted.json`、`data/meta.json`；刪除本版不存在的 id 對應照片。
+
+罪名歸類 (`src/lib/categories.ts`)：關鍵字表，順序比對，第一個命中即歸類；全部不命中為「其他」。不做模糊推測。「經濟犯罪」涵蓋證券交易法、銀行法、侵占、背信、期貨、保險法、公司法、商業會計法、稅捐、票據，因調查局名單四成是這類。
+
+## 網站
+
+Astro 5 靜態輸出，Svelte 5 只用在搜尋篩選 island。
+
+| 路徑 | 內容 |
+|---|---|
+| `/` | 全部名單卡片，依 `updatedAt` 倒序。搜尋框（姓名、罪名、通緝機關，前端子字串比對）。篩選：來源、類別。卡片：照片、姓名、出生年、罪名、通緝機關、來源標籤。 |
+| `/p/<id>` | 全部欄位、大圖、檢舉電話、官方原始頁連結、資料日期、「以通緝機關最新公告為準」。`<meta name="robots" content="noindex, nofollow">`。OG title／description／image。 |
+| `/about` | 來源、更新頻率、免責、回報下架的 GitHub Issues 連結與處理原則。 |
+| `/data.json` | `data/wanted.json` 原樣輸出。 |
+| `/_headers` | Cloudflare Pages 標頭：`/photos/*` 與 `/og/*` 加 `X-Robots-Tag: noindex`，圖片搜尋也不收。 |
+| `/404` | 「此筆已不在官方公告中」，不顯示任何姓名。 |
+
+OG 圖：build 時用 satori + resvg 產 1200×630 文字卡（姓名、罪名、通緝機關、站名）。
+
+視覺：手機優先單欄，桌機三欄；深色模式跟系統；無地圖、無統計圖。
+
+## 更新與部署
+
+- `.github/workflows/sync.yml`：cron 每日 22:00 UTC（台灣 06:00）＋ `workflow_dispatch`。先從 `site` 分支取上一版資料（guard 比對、照片快取），跑 `pnpm sync`，驗證輸出無完整證號，再以 master 程式碼＋資料建立 orphan commit force-push 到 `site`。`site` 永遠只有一個 commit。
+- `master` 的 `.gitignore` 排除 `data/*.json` 與 `public/photos/*.jpg`。`test.yml` 在 master 跑測試時從 `site` 取資料；取不到就略過 build 測試。
+- Cloudflare Pages 連 repo，production branch `site`，`pnpm build`，輸出 `dist/`。先用 `*.pages.dev`。
+- 回報下架走 GitHub Issues（公開；下架標準是官方已撤銷這個客觀事實，不需驗證回報者身分）。處理原則（寫在 about）：官方已下架 → 手動移除或等下次同步；官方仍公告 → 不刪，請對方洽通緝機關。
+
+## 專案結構
+
+```
+taiwan-wanted/
+  .nvmrc (22)  package.json (pnpm)  astro.config.mjs  tsconfig.json
+  scripts/
+    fetch.ts  http.ts  sources/cib.ts  sources/mjib.ts  normalize.ts  photos.ts  guard.ts
+  data/wanted.json  data/meta.json
+  public/photos/
+  src/
+    pages/index.astro  pages/p/[id].astro  pages/about.astro  pages/data.json.ts  pages/404.astro
+    components/WantedList.svelte  components/Card.astro
+    lib/categories.ts  lib/types.ts
+  test/
+    fixtures/cib-list.html  fixtures/cib-record.json  fixtures/mjib-list.html  fixtures/mjib-detail.html
+    normalize.test.ts  guard.test.ts  cib.test.ts  mjib.test.ts  build.test.ts
+  .github/workflows/sync.yml
+  docs/superpowers/specs/
+```
+
+## 測試
+
+Vitest，不打真網路。
+
+- `normalize.test.ts`：fixture 原始資料 → 記錄欄位、`idMasked` 格式、民國日期轉換、歸類。
+- `guard.test.ts`：掉 30%、0 筆、HTTP 失敗 → 沿用舊資料、`stale: true`、非零結束。
+- `cib.test.ts`、`mjib.test.ts`：fixture HTML／JSON → 筆數與欄位。
+- `build.test.ts`：`astro build` 後，`/p/<id>` 含 noindex；`/data.json` 筆數等於 `wanted.json`。
+
+不測：網路層、Cloudflare 部署、視覺。
+
+## 建置順序
+
+1. 抓取腳本與其測試，跑出真實 `data/wanted.json` 與照片。
+2. 頁面與 island。
+3. workflow 與 Cloudflare Pages。
+
+## 不做
+
+- 警政署、高檢署點查系統的任何整合。
+- 歷史、時間線、統計、地圖。
+- 英文版。
+- 人臉比對、地理定位、使用者帳號。

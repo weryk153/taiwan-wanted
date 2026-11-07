@@ -1,0 +1,23 @@
+---
+import Base from "../../layouts/Base.astro";
+import { loadData } from "../../lib/data";
+import { CATEGORIES } from "../../lib/types";
+const { records } = loadData();
+const rows = CATEGORIES.map((c) => [c, records.filter((r) => r.category === c).length] as const).filter(([, n]) => n > 0);
+---
+<Base title="依罪名類別" description="各罪名類別目前公告的要犯人數與名單">
+  <a class="back" href="/">回名單</a>
+  <div class="prose">
+    <h2>依罪名類別</h2>
+    <ul class="units">
+      {rows.map(([c, n]) => <li><a href={`/c/${encodeURIComponent(c)}/`}>{c}</a><span>{n} 人</span></li>)}
+    </ul>
+  </div>
+</Base>
+<style>
+  .units { list-style: none; padding: 0; margin: 0; }
+  .units li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px solid var(--ink); }
+  .units a { color: var(--ink); text-decoration: none; }
+  .units a:hover { color: var(--red); }
+  .units span { color: var(--ink-2); }
+</style>
