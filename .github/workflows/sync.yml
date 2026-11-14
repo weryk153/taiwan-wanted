@@ -1,0 +1,68 @@
+name: sync
+
+on:
+  schedule:
+    - cron: "0 22 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Restore previous data from site branch
+        run: |
+          if git fetch --depth=1 origin site 2>/dev/null; then
+            git checkout FETCH_HEAD -- data public/photos || true
+            git reset -q -- data public/photos
+          else
+            echo "no site branch yet, first run"
+          fi
+
+      - name: Sync
+        id: sync
+        run: pnpm sync
+        continue-on-error: true
+
+      - name: Verify no full ID numbers in output
+        run: |
+          test -s data/wanted.json
+          if grep -qE '"[A-Z][12][0-9]{8}"' data/wanted.json; then echo "full ID found"; exit 1; fi
+
+      - name: Refresh reviewed judgment sources
+        id: judgments
+        run: pnpm judgments:sync
+        continue-on-error: true
+
+      - name: Publish single-commit site branch
+        run: |
+          git config user.name "taiwan-wanted bot"
+          git config user.email "actions@users.noreply.github.com"
+          CIB=$(node -e 'console.log(require("./data/meta.json").sources.cib.count)')
+          MJIB=$(node -e 'console.log(require("./data/meta.json").sources.mjib.count)')
+          git checkout -q --orphan site-next
+          git add -A
+          git add -f data/wanted.json data/meta.json public/photos/*.jpg
+          git commit -q -m "site: $(date -u +%F) cib=$CIB mjib=$MJIB"
+          git push --force origin site-next:site
+
+      - name: Fail if a source was stale
+        if: steps.sync.outcome == 'failure' || steps.judgments.outcome == 'failure'
+        run: |
+          echo "::error::A wanted or judgment source could not refresh; site was updated with usable data. See sync logs."
+          exit 1

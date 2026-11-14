@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /p/
+Disallow: /photos/
+Disallow: /og/
+
+Sitemap: https://taiwan-wanted.pages.dev/sitemap-index.xml
