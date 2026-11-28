@@ -1,0 +1,34 @@
+---
+import type { CaseReference } from "../lib/types";
+import { judgmentTimelines, STAGE_LABELS } from "../lib/judgments";
+const { items } = Astro.props as { items: CaseReference[] };
+const groups = judgmentTimelines(items);
+---
+{groups.length > 0 && <div class="timelines">
+  <h3>已收錄審級時間線</h3>
+  <p class="caption">僅串接已核對的前後審裁判；未收錄的審級與後續進度仍須查閱官方資料。</p>
+  {groups.map(group => <section class="timeline" aria-label={`${group.label}審級時間線`}>
+    <h4>{group.label}</h4>
+    <ol>
+      {group.items.map(item => <li>
+        <div class="time"><time datetime={item.publishedAt}>{item.publishedAt}</time><span>{STAGE_LABELS[item.procedure!.stage]}</span></div>
+        <a href={item.url} target="_blank" rel="noopener noreferrer">{item.judgment!.court} · {item.judgment!.caseNumber} ↗</a>
+        <p>{item.context}</p>
+      </li>)}
+    </ol>
+  </section>)}
+</div>}
+<style>
+  .timelines { margin: 24px 0; padding: 20px; background: var(--paper-2); border: 1px solid var(--rule); }
+  h3 { margin: 0; font: 700 20px/1.5 var(--serif); }
+  .caption { color: var(--ink-2); font-size: 13px; margin: 8px 0 20px; }
+  h4 { font: 700 16px/1.5 var(--serif); margin: 0 0 16px; }
+  ol { list-style: none; margin: 0 0 0 5px; padding: 0; }
+  li { border-left: 1px solid var(--red); padding: 0 0 24px 20px; position: relative; overflow-wrap: anywhere; }
+  li:last-child { padding-bottom: 0; }
+  li::before { content: ""; position: absolute; left: -4px; top: 7px; width: 7px; height: 7px; background: var(--red); }
+  .time { display: flex; gap: 12px; flex-wrap: wrap; color: var(--red); font-size: 13px; margin-bottom: 6px; }
+  a { font-size: 14px; text-underline-offset: 3px; }
+  p { margin: 8px 0 0; font-size: 14px; }
+  @media (max-width: 600px) { .timelines { padding: 16px; } }
+</style>
